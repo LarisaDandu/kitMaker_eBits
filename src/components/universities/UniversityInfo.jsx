@@ -28,9 +28,11 @@ export default function UniversityInfo({ university, onModify, onDelete }) {
         </h2>
         <div className="flex flex-wrap gap-2">
           <Button type="button" onClick={onModify}>
+            <EditIcon />
             Modify
           </Button>
           <Button type="button" variant="danger" onClick={onDelete}>
+            <TrashIcon />
             Delete customer
           </Button>
         </div>
@@ -44,5 +46,23 @@ export default function UniversityInfo({ university, onModify, onDelete }) {
         <InfoRow label="EAN number" value={university.ean} />
       </div>
     </section>
+  )
+}
+
+function EditIcon() {
+  return (
+    <svg className="shrink-0" width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M4 20h4L19 9l-4-4L4 16v4Z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
+      <path d="M13 7l4 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+    </svg>
+  )
+}
+
+function TrashIcon() {
+  return (
+    <svg className="shrink-0" width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6h14Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M10 11v6M14 11v6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+    </svg>
   )
 }

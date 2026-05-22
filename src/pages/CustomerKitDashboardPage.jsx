@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { useParams } from 'react-router'
 import SearchFilterPanel from '../components/admin/SearchFilterPanel'
+import TeacherAccountMenu from '../components/customer/TeacherAccountMenu'
 import CustomerOrderCard from '../components/kits/CustomerOrderCard'
 import CustomerReviewProgress from '../components/kits/CustomerReviewProgress'
 import KitPrice from '../components/kits/KitPrice'
@@ -12,9 +13,11 @@ import {
   PRODUCT_STATUS,
   getProductsByUniversity,
 } from '../data/products'
+import { useDebouncedValue } from '../hooks/useDebouncedValue'
 import { UNIVERSITY_STATUS } from '../data/universities'
 import { useUniversityByLoginCode } from '../hooks/useUniversityByLoginCode'
 import { cn } from '../lib/cn'
+import { formatLastUpdated } from '../lib/time'
 
 const FILTERS = [
   { id: 'all', label: 'All' },
@@ -24,16 +27,11 @@ const FILTERS = [
   { id: PRODUCT_STATUS.CHANGES, label: 'Changes' },
 ]
 
-function UserIcon() {
-  return (
-    <svg width="30" height="30" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path
-        d="M20 21a8 8 0 0 0-16 0M12 13a5 5 0 1 0 0-10 5 5 0 0 0 0 10Z"
-        fill="currentColor"
-      />
-    </svg>
-  )
-}
+const SORT_OPTIONS = [
+  { id: 'quoteRow', label: 'Quote row' },
+  { id: 'name', label: 'Name' },
+  { id: 'status', label: 'Review status' },
+]
 
 function getInitialReviews(products) {
   return products.reduce((reviews, product) => {
@@ -67,7 +65,9 @@ function revokeImportedImageUrls(importSummary) {
 export default function CustomerKitDashboardPage() {
   const { loginCode } = useParams()
   const [searchQuery, setSearchQuery] = useState('')
+  const debouncedSearchQuery = useDebouncedValue(searchQuery)
   const [activeFilter, setActiveFilter] = useState('all')
+  const [sortValue, setSortValue] = useState('quoteRow')
   const [importSummary, setImportSummary] = useState(null)
   const university = useUniversityByLoginCode(loginCode)
 
@@ -79,9 +79,9 @@ export default function CustomerKitDashboardPage() {
   const [reviews, setReviews] = useState(() => getInitialReviews(demoProducts))
 
   const filteredProducts = useMemo(() => {
-    const query = searchQuery.trim().toLowerCase()
+    const query = debouncedSearchQuery.trim().toLowerCase()
 
-    return products.filter((product) => {
+    const filtered = products.filter((product) => {
       const review = reviews[product.id]
       const matchesStatus =
         activeFilter === 'all' ||
@@ -96,7 +96,17 @@ export default function CustomerKitDashboardPage() {
 
       return matchesStatus && matchesSearch
     })
-  }, [activeFilter, products, reviews, searchQuery])
+
+    return [...filtered].sort((a, b) => {
+      if (sortValue === 'name') return a.name.localeCompare(b.name)
+      if (sortValue === 'status') {
+        const aStatus = reviews[a.id]?.status ?? a.status
+        const bStatus = reviews[b.id]?.status ?? b.status
+        return aStatus.localeCompare(bStatus)
+      }
+      return Number(a.quoteRow ?? 0) - Number(b.quoteRow ?? 0)
+    })
+  }, [activeFilter, products, reviews, debouncedSearchQuery, sortValue])
 
   if (!university) {
     return (
@@ -149,11 +159,14 @@ export default function CustomerKitDashboardPage() {
           <h1 className="m-0 font-headline text-3xl uppercase leading-tight">
             Order Dashboard
           </h1>
-          <div className="flex items-center gap-3 text-base max-sm:hidden">
-            <span>{university.name}</span>
-            <UserIcon />
-          </div>
+          <TeacherAccountMenu
+            university={university}
+            className="max-sm:hidden"
+          />
         </header>
+        <p className="m-0 -mt-3 text-sm font-medium text-text-secondary">
+          Last updated: {formatLastUpdated(university.lastUpdatedAt)}
+        </p>
 
         <div className="grid gap-5 lg:grid-cols-[1.4fr_0.8fr]">
           <CustomerOrderCard
@@ -187,12 +200,16 @@ export default function CustomerKitDashboardPage() {
           <SearchFilterPanel
             searchQuery={searchQuery}
             onSearchChange={setSearchQuery}
-            searchPlaceholder="Search products..."
+            searchPlaceholder="Search by product name, SKU, variant, quote row..."
             filters={FILTERS}
             activeFilter={activeFilter}
             onFilterChange={setActiveFilter}
             filterAriaLabel="Filter products by review status"
             ariaLabel="Search and filter products"
+            isSearching={searchQuery !== debouncedSearchQuery}
+            sortValue={sortValue}
+            sortOptions={SORT_OPTIONS}
+            onSortChange={setSortValue}
             className="px-4 py-4"
             action={
               <Button
@@ -200,7 +217,8 @@ export default function CustomerKitDashboardPage() {
                 onClick={() => window.alert('Add more products (demo)')}
                 variant="accent"
               >
-                + Add more
+                <PlusIcon />
+                Add more
               </Button>
             }
           />
@@ -229,5 +247,13 @@ export default function CustomerKitDashboardPage() {
         </section>
       </div>
     </main>
+  )
+}
+
+function PlusIcon() {
+  return (
+    <svg className="shrink-0" width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+    </svg>
   )
 }

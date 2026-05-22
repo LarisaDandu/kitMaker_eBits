@@ -80,10 +80,20 @@ export default function ProductCard({ product, onChange }) {
         <CustomerReply reply={product.customerReply} status={product.status} />
 
         <Button type="button" onClick={() => onChange?.(product)} className="mt-4 w-full justify-center">
+          <EditIcon />
           Change
         </Button>
       </div>
     </article>
+  )
+}
+
+function EditIcon() {
+  return (
+    <svg className="shrink-0" width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M4 20h4L19 9l-4-4L4 16v4Z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
+      <path d="M13 7l4 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+    </svg>
   )
 }
 

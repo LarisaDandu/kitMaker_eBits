@@ -1,14 +1,18 @@
 import { formatKr } from '../../lib/format'
 import { cn } from '../../lib/cn'
+import HelpTooltip from '../ui/HelpTooltip'
 
-function PriceDetailRow({ label, value }) {
+function PriceDetailRow({ label, value, help }) {
   return (
     <div
       className={cn(
         'flex items-center justify-between gap-4 border-b border-text py-3',
       )}
     >
-      <span className="font-body text-base font-medium text-text">{label}</span>
+      <span className="flex items-center gap-2 font-body text-base font-medium text-text">
+        {label}
+        <HelpTooltip label={`${label} help`}>{help}</HelpTooltip>
+      </span>
       <span className="font-body text-base font-medium text-text">{value}</span>
     </div>
   )
@@ -35,10 +39,15 @@ export default function KitPrice({ pricing }) {
       </p>
 
       <div className={cn('mt-5')}>
-        <PriceDetailRow label="Price per kit" value={formatKr(pricePerKit)} />
+        <PriceDetailRow
+          label="Price per kit"
+          value={formatKr(pricePerKit)}
+          help="The estimated unit price for one complete kit."
+        />
         <PriceDetailRow
           label="Initial estimate price"
           value={formatKr(initialEstimatePrice)}
+          help="The first total estimate before final review and changes."
         />
       </div>
     </div>

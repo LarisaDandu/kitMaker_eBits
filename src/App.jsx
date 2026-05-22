@@ -1,8 +1,6 @@
 import { Outlet, Routes, Route } from 'react-router'
-import Layout from './components/Layout'
 import { UniversitiesProvider } from './context/UniversitiesContext'
-import Home from './pages/Home'
-import About from './pages/About'
+import LoginPage from './pages/LoginPage'
 import AddComponentsPage from './pages/AddComponentsPage'
 import CustomerKitBuilderPage from './pages/CustomerKitBuilderPage'
 import CustomerKitDashboardPage from './pages/CustomerKitDashboardPage'
@@ -46,10 +44,7 @@ export default function App() {
         <Route path="customers/:id" element={<UniversityDetailPage />} />
         <Route path="customers/:id/edit" element={<CustomerFormPage />} />
       </Route>
-      <Route path="/" element={<Layout />}>
-        <Route index element={<Home />} />
-        <Route path="about" element={<About />} />
-      </Route>
+      <Route path="/" element={<LoginPage />} />
     </Routes>
   )
 }

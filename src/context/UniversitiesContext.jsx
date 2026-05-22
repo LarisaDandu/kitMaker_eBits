@@ -7,8 +7,25 @@ import {
 import { formValuesToUniversity, generateUniversityId } from '../lib/universityUtils'
 import { UniversitiesContext } from './universitiesContextValue'
 
+function withMetadata(universities) {
+  const initialTimestamp = new Date().toISOString()
+
+  return universities.map((university) => ({
+    ...university,
+    lastUpdatedAt: initialTimestamp,
+    deletedAt: null,
+  }))
+}
+
 export function UniversitiesProvider({ children }) {
-  const [universities, setUniversities] = useState(seedUniversities)
+  const [allUniversities, setAllUniversities] = useState(() =>
+    withMetadata(seedUniversities),
+  )
+
+  const universities = useMemo(
+    () => allUniversities.filter((uni) => !uni.deletedAt),
+    [allUniversities],
+  )
 
   const getUniversity = useCallback(
     (id) => universities.find((uni) => uni.id === id),
@@ -18,25 +35,63 @@ export function UniversitiesProvider({ children }) {
   const addUniversity = useCallback((formValues) => {
     const university = formValuesToUniversity(formValues, {
       id: generateUniversityId(),
+      lastUpdatedAt: new Date().toISOString(),
+      deletedAt: null,
     })
-    setUniversities((prev) => [...prev, university])
+    setAllUniversities((prev) => [...prev, university])
     return university.id
   }, [])
 
   const updateUniversity = useCallback((id, formValues) => {
-    setUniversities((prev) =>
+    setAllUniversities((prev) =>
       prev.map((uni) =>
-        uni.id === id ? formValuesToUniversity(formValues, uni) : uni,
+        uni.id === id
+          ? {
+              ...formValuesToUniversity(formValues, uni),
+              lastUpdatedAt: new Date().toISOString(),
+              deletedAt: uni.deletedAt ?? null,
+            }
+          : uni,
       ),
     )
   }, [])
 
   const removeUniversity = useCallback((id) => {
-    setUniversities((prev) => prev.filter((uni) => uni.id !== id))
+    setAllUniversities((prev) => prev.filter((uni) => uni.id !== id))
+  }, [])
+
+  const softDeleteUniversity = useCallback((id) => {
+    const deletedAt = new Date().toISOString()
+    setAllUniversities((prev) =>
+      prev.map((uni) =>
+        uni.id === id
+          ? {
+              ...uni,
+              deletedAt,
+              lastUpdatedAt: deletedAt,
+            }
+          : uni,
+      ),
+    )
+  }, [])
+
+  const restoreUniversity = useCallback((id) => {
+    const restoredAt = new Date().toISOString()
+    setAllUniversities((prev) =>
+      prev.map((uni) =>
+        uni.id === id
+          ? {
+              ...uni,
+              deletedAt: null,
+              lastUpdatedAt: restoredAt,
+            }
+          : uni,
+      ),
+    )
   }, [])
 
   const advanceKitOrder = useCallback((id) => {
-    setUniversities((prev) =>
+    setAllUniversities((prev) =>
       prev.map((uni) => {
         if (uni.id !== id) return uni
 
@@ -49,6 +104,7 @@ export function UniversitiesProvider({ children }) {
 
         return {
           ...uni,
+          lastUpdatedAt: new Date().toISOString(),
           status:
             nextStep >= maxStep
               ? UNIVERSITY_STATUS.ACTIVE_ORDER
@@ -76,6 +132,8 @@ export function UniversitiesProvider({ children }) {
       addUniversity,
       updateUniversity,
       removeUniversity,
+      softDeleteUniversity,
+      restoreUniversity,
       advanceKitOrder,
     }),
     [
@@ -84,6 +142,8 @@ export function UniversitiesProvider({ children }) {
       addUniversity,
       updateUniversity,
       removeUniversity,
+      softDeleteUniversity,
+      restoreUniversity,
       advanceKitOrder,
     ],
   )

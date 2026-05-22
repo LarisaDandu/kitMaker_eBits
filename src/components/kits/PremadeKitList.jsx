@@ -17,7 +17,13 @@ function ViewButton({ active, children, onClick }) {
   )
 }
 
-export default function PremadeKitList({ kits, view, onViewChange, onAdd }) {
+export default function PremadeKitList({
+  kits,
+  view,
+  onViewChange,
+  onAdd,
+  emptyMessage = 'No kits match your filters.',
+}) {
   return (
     <section className="rounded-[20px] bg-background-secondary px-7 py-7">
       <div className="flex justify-end gap-2">
@@ -29,10 +35,16 @@ export default function PremadeKitList({ kits, view, onViewChange, onAdd }) {
         </ViewButton>
       </div>
 
-      <div className={cn('mt-5', view === 'grid' && 'grid gap-6 md:grid-cols-2 xl:grid-cols-3')}>
-        {kits.map((kit) => (
-          <PremadeKitCard key={kit.id} kit={kit} view={view} onAdd={onAdd} />
-        ))}
+      <div className={cn('mt-5', view === 'grid' && kits.length > 0 && 'grid gap-6 md:grid-cols-2 xl:grid-cols-3')}>
+        {kits.length === 0 ? (
+          <p className="m-0 py-8 text-center text-sm font-medium text-text-secondary">
+            {emptyMessage}
+          </p>
+        ) : (
+          kits.map((kit) => (
+            <PremadeKitCard key={kit.id} kit={kit} view={view} onAdd={onAdd} />
+          ))
+        )}
       </div>
     </section>
   )

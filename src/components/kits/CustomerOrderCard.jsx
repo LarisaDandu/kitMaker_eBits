@@ -3,11 +3,15 @@ import { STATUS_LABELS, UNIVERSITY_STATUS } from '../../data/universities'
 import { cn } from '../../lib/cn'
 import Button from '../ui/Button'
 import { buttonClassName } from '../ui/buttonStyles'
+import HelpTooltip from '../ui/HelpTooltip'
 
-function CustomerStat({ label, value }) {
+function CustomerStat({ label, value, help }) {
   return (
     <div className="flex min-h-[120px] flex-col justify-between rounded-xl border border-accent-1 bg-background-third px-5 py-4">
-      <span className="font-body text-base font-medium text-text">{label}</span>
+      <span className="flex items-center gap-2 font-body text-base font-medium text-text">
+        {label}
+        {help ? <HelpTooltip label={`${label} help`}>{help}</HelpTooltip> : null}
+      </span>
       <span className="font-body text-4xl leading-none text-text">{value}</span>
     </div>
   )
@@ -115,18 +119,22 @@ export default function CustomerOrderCard({
             <CustomerStat
               label="Components checked"
               value={`${stats.checked}/${stats.totalComponents}`}
+              help="How many components in this order have been reviewed."
             />
             <CustomerStat
               label="Components approved"
               value={`${stats.approved}/${stats.totalComponents}`}
+              help="Components approved for the kit."
             />
             <CustomerStat
               label="Components rejected"
               value={`${rejected}/${stats.totalComponents}`}
+              help="Components that need replacement or changes."
             />
             <CustomerStat
               label="Total number of kits"
               value={String(stats.totalKits)}
+              help="The quantity of complete kits ordered."
             />
           </div>
 

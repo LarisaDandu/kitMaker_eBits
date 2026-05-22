@@ -1,8 +1,12 @@
 import { useMemo, useState } from 'react'
 import { useParams } from 'react-router'
+import FilterPill from '../components/admin/FilterPill'
+import TeacherAccountMenu from '../components/customer/TeacherAccountMenu'
 import KitMakerCart from '../components/kits/KitMakerCart'
 import OrderOverviewModal from '../components/kits/OrderOverviewModal'
 import PremadeKitList from '../components/kits/PremadeKitList'
+import SortSelect from '../components/ui/SortSelect'
+import { useDebouncedValue } from '../hooks/useDebouncedValue'
 import { useUniversityByLoginCode } from '../hooks/useUniversityByLoginCode'
 
 const part = (id, name, quantity = 1) => ({
@@ -27,20 +31,25 @@ const kits = Array.from({ length: 5 }, (_, index) => ({
   ],
 }))
 
-function UserIcon() {
-  return (
-    <svg width="30" height="30" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path
-        d="M20 21a8 8 0 0 0-16 0M12 13a5 5 0 1 0 0-10 5 5 0 0 0 0 10Z"
-        fill="currentColor"
-      />
-    </svg>
-  )
-}
+const SORT_OPTIONS = [
+  { id: 'name', label: 'Name' },
+  { id: 'priceLow', label: 'Lowest price' },
+  { id: 'priceHigh', label: 'Highest price' },
+  { id: 'components', label: 'Component count' },
+]
+
+const PRICE_FILTERS = [
+  { id: 'all', label: 'All prices' },
+  { id: 'under200', label: 'Under 200 kr' },
+  { id: '200plus', label: '200 kr+' },
+]
 
 export default function PremadeKitsPage() {
   const { loginCode } = useParams()
   const [query, setQuery] = useState('')
+  const debouncedQuery = useDebouncedValue(query)
+  const [sortValue, setSortValue] = useState('name')
+  const [priceFilter, setPriceFilter] = useState('all')
   const [view, setView] = useState('list')
   const [cartItems, setCartItems] = useState([])
   const [pendingOrder, setPendingOrder] = useState(null)
@@ -48,11 +57,26 @@ export default function PremadeKitsPage() {
   const university = useUniversityByLoginCode(loginCode)
 
   const filteredKits = useMemo(() => {
-    const normalizedQuery = query.trim().toLowerCase()
-    return kits.filter(
-      (kit) => !normalizedQuery || kit.name.toLowerCase().includes(normalizedQuery),
-    )
-  }, [query])
+    const normalizedQuery = debouncedQuery.trim().toLowerCase()
+    const filtered = kits.filter((kit) => {
+      const matchesPrice =
+        priceFilter === 'all' ||
+        (priceFilter === 'under200' && kit.price < 200) ||
+        (priceFilter === '200plus' && kit.price >= 200)
+
+      return (
+        matchesPrice &&
+        (!normalizedQuery || kit.name.toLowerCase().includes(normalizedQuery))
+      )
+    })
+
+    return [...filtered].sort((a, b) => {
+      if (sortValue === 'priceLow') return a.price - b.price
+      if (sortValue === 'priceHigh') return b.price - a.price
+      if (sortValue === 'components') return b.componentCount - a.componentCount
+      return a.name.localeCompare(b.name)
+    })
+  }, [debouncedQuery, priceFilter, sortValue])
 
   if (!university) {
     return (
@@ -100,15 +124,32 @@ export default function PremadeKitsPage() {
             <span className="mb-5 block text-xl text-text">Search by keywords</span>
             <input
               type="search"
+              placeholder="Search by kit name..."
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               className="w-full rounded-xl border border-accent-2 bg-transparent px-4 py-4 font-body text-base text-text outline-none"
             />
           </label>
+          <p className="m-0 mt-3 min-h-5 text-sm font-medium text-text-secondary" aria-live="polite">
+            {query !== debouncedQuery ? 'Searching...' : ' '}
+          </p>
 
-          <div className="mt-24 flex items-center gap-3 text-2xl text-text">
-            <span>≡</span>
-            <span>Filters</span>
+          <div className="mt-10 flex flex-wrap items-center gap-3">
+            <SortSelect
+              value={sortValue}
+              options={SORT_OPTIONS}
+              onChange={setSortValue}
+            />
+            <div className="flex flex-wrap gap-2" role="group" aria-label="Filter kits by price">
+              {PRICE_FILTERS.map((filter) => (
+                <FilterPill
+                  key={filter.id}
+                  label={filter.label}
+                  active={priceFilter === filter.id}
+                  onClick={() => setPriceFilter(filter.id)}
+                />
+              ))}
+            </div>
           </div>
 
           <div className="mt-24">
@@ -117,15 +158,13 @@ export default function PremadeKitsPage() {
               view={view}
               onViewChange={setView}
               onAdd={handleAdd}
+              emptyMessage="No kits match your filters."
             />
           </div>
         </div>
 
         <div>
-          <div className="mb-12 flex items-center justify-end gap-3 text-base">
-            <span>{university.name}</span>
-            <UserIcon />
-          </div>
+          <TeacherAccountMenu university={university} className="mb-12 flex justify-end" />
           <KitMakerCart
             items={cartItems}
             onClear={() => setCartItems([])}

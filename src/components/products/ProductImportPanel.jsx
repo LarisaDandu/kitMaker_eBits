@@ -10,6 +10,8 @@ export default function ProductImportPanel({
   description = "Upload a CSV or Excel sheet to replace this session's approval cards with products from the file.",
   resetLabel = 'Reset to demo products',
   emptyLabel = 'No file imported',
+  maxFileSizeMb = 5,
+  acceptedFileLabel = 'CSV or XLSX under 5 MB',
 }) {
   const inputId = useId()
   const inputRef = useRef(null)
@@ -23,6 +25,13 @@ export default function ProductImportPanel({
 
     setFileName(file.name)
     setError('')
+
+    if (file.size > maxFileSizeMb * 1024 * 1024) {
+      setError(`This file is too large. Please upload a CSV or XLSX under ${maxFileSizeMb} MB.`)
+      event.target.value = ''
+      return
+    }
+
     setIsParsing(true)
 
     try {
@@ -60,6 +69,7 @@ export default function ProductImportPanel({
             rounded="xl"
             onClick={handleReset}
           >
+            <ResetIcon />
             {resetLabel}
           </Button>
         ) : null}
@@ -70,6 +80,7 @@ export default function ProductImportPanel({
           htmlFor={inputId}
           className="inline-flex min-h-12 cursor-pointer items-center justify-center gap-2 rounded-xl border border-accent-2 bg-transparent px-7 py-3 font-body text-base font-medium text-text transition-opacity hover:opacity-80"
         >
+          <UploadIcon />
           Upload CSV/XLSX
         </label>
         <input
@@ -85,6 +96,9 @@ export default function ProductImportPanel({
           {isParsing
             ? 'Parsing file...'
             : fileName || importSummary?.fileName || emptyLabel}
+        </span>
+        <span className="text-sm font-medium text-text-secondary">
+          {acceptedFileLabel}
         </span>
       </div>
 
@@ -105,5 +119,21 @@ export default function ProductImportPanel({
         </p>
       ) : null}
     </section>
+  )
+}
+
+function UploadIcon() {
+  return (
+    <svg className="shrink-0" width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M12 3v12M7 8l5-5 5 5M5 21h14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+function ResetIcon() {
+  return (
+    <svg className="shrink-0" width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M4 4v6h6M20 20v-6h-6M5 15a7 7 0 0 0 11.7 3.2M19 9A7 7 0 0 0 7.3 5.8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
   )
 }

@@ -8,17 +8,25 @@ export default function SearchFilterBar({
   activeFilter,
   onFilterChange,
   onCreateCustomer,
+  isSearching,
+  sortValue,
+  sortOptions,
+  onSortChange,
 }) {
   return (
     <SearchFilterPanel
       searchQuery={searchQuery}
       onSearchChange={onSearchChange}
-      searchPlaceholder="Search clients..."
+      searchPlaceholder="Search by customer name, quote number, EAN, login code..."
       filters={filters}
       activeFilter={activeFilter}
       onFilterChange={onFilterChange}
       filterAriaLabel="Filter clients by status"
       ariaLabel="Search and filter clients"
+      isSearching={isSearching}
+      sortValue={sortValue}
+      sortOptions={sortOptions}
+      onSortChange={onSortChange}
       action={
         <Button onClick={onCreateCustomer} className="max-sm:justify-center">
           <PlusIcon />

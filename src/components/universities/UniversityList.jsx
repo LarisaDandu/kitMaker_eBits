@@ -1,7 +1,11 @@
 import UniversityCard from './UniversityCard'
 import { cn } from '../../lib/cn'
 
-export default function UniversityList({ universities, onDelete }) {
+export default function UniversityList({
+  universities,
+  onDelete,
+  emptyMessage = 'No customers match your filters.',
+}) {
   return (
     <section
       className={cn(
@@ -12,7 +16,7 @@ export default function UniversityList({ universities, onDelete }) {
     >
       {universities.length === 0 ? (
         <p className={cn('py-8 text-center text-[0.95rem] text-text-secondary')}>
-          No clients match your search or filter.
+          {emptyMessage}
         </p>
       ) : (
         <div className="flex flex-col gap-5">

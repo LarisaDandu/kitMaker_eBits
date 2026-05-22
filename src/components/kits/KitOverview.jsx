@@ -1,14 +1,18 @@
 import { KIT_STATUS_LABELS, UNIVERSITY_STATUS } from '../../data/universities'
 import { cn } from '../../lib/cn'
+import HelpTooltip from '../ui/HelpTooltip'
 
-function StatBox({ label, value }) {
+function StatBox({ label, value, help }) {
   return (
     <div
       className={cn(
         'flex min-w-[120px] flex-1 flex-col gap-1 rounded-xl bg-background px-4 py-3',
       )}
     >
-      <span className="text-sm font-medium text-text-secondary">{label}</span>
+      <span className="flex items-center gap-2 text-sm font-medium text-text-secondary">
+        {label}
+        <HelpTooltip label={`${label} help`}>{help}</HelpTooltip>
+      </span>
       <span className="text-base font-semibold text-text">{value}</span>
     </div>
   )
@@ -23,18 +27,22 @@ export default function KitOverview({ university, onExportCsv }) {
     {
       label: 'Components checked',
       value: `${stats.checked}/${stats.totalComponents}`,
+      help: 'How many components have been reviewed in this kit.',
     },
     {
       label: 'Components approved',
       value: `${stats.approved}/${stats.totalComponents}`,
+      help: 'Components approved for the current kit quote.',
     },
     {
       label: 'Components required',
       value: `${stats.required ?? 0}/${stats.totalComponents}`,
+      help: 'Components still requiring changes or follow-up.',
     },
     {
       label: 'Total number of kits',
       value: String(stats.totalKits),
+      help: 'The requested production quantity for this school.',
     },
   ]
 

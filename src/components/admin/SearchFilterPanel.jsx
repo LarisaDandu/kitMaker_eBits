@@ -1,4 +1,5 @@
 import FilterPill from './FilterPill'
+import SortSelect from '../ui/SortSelect'
 import { cn } from '../../lib/cn'
 
 export default function SearchFilterPanel({
@@ -11,8 +12,14 @@ export default function SearchFilterPanel({
   filterAriaLabel = 'Filter results',
   action,
   ariaLabel = 'Search and filter',
+  isSearching = false,
+  sortValue,
+  sortOptions = [],
+  onSortChange,
   className,
 }) {
+  const showSort = sortOptions.length > 0 && sortValue && onSortChange
+
   return (
     <section
       className={cn(
@@ -53,6 +60,14 @@ export default function SearchFilterPanel({
             />
           </label>
 
+          {showSort ? (
+            <SortSelect
+              value={sortValue}
+              options={sortOptions}
+              onChange={onSortChange}
+            />
+          ) : null}
+
           <div className="flex flex-wrap gap-2" role="group" aria-label={filterAriaLabel}>
             {filters.map((filter) => (
               <FilterPill
@@ -67,6 +82,16 @@ export default function SearchFilterPanel({
 
         {action ? <div className="max-sm:flex max-sm:justify-center">{action}</div> : null}
       </div>
+
+      <p
+        className={cn(
+          'm-0 mt-3 min-h-5 text-sm font-medium text-text-secondary',
+          !isSearching && 'invisible',
+        )}
+        aria-live="polite"
+      >
+        Searching...
+      </p>
     </section>
   )
 }

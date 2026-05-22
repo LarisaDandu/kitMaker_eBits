@@ -1,22 +1,12 @@
 import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router'
+import TeacherAccountMenu from '../components/customer/TeacherAccountMenu'
 import CustomerOrderCard from '../components/kits/CustomerOrderCard'
 import PrototypeAccessModal from '../components/kits/PrototypeAccessModal'
 import Button from '../components/ui/Button'
 import { UNIVERSITY_STATUS } from '../data/universities'
 import { useUniversityByLoginCode } from '../hooks/useUniversityByLoginCode'
 import { cn } from '../lib/cn'
-
-function UserIcon() {
-  return (
-    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path
-        d="M20 21a8 8 0 0 0-16 0M12 13a5 5 0 1 0 0-10 5 5 0 0 0 0 10Z"
-        fill="currentColor"
-      />
-    </svg>
-  )
-}
 
 export default function CustomerOrdersPage() {
   const { loginCode } = useParams()
@@ -60,10 +50,10 @@ export default function CustomerOrdersPage() {
             </Button>
           </div>
 
-          <div className="flex shrink-0 items-center gap-4 text-xl max-sm:hidden">
-            <span>{university.name}</span>
-            <UserIcon />
-          </div>
+          <TeacherAccountMenu
+            university={university}
+            className="max-sm:hidden"
+          />
         </header>
 
         <div className={cn('mt-24 flex flex-col gap-8', 'max-sm:mt-12')}>

@@ -41,11 +41,20 @@ export default function PreviousOrders({ orders = [], onExportCsv }) {
                 'inline-flex cursor-pointer items-center gap-2 rounded-full bg-text px-4 py-2 font-body text-sm font-medium text-background transition-opacity hover:opacity-90',
               )}
             >
+              <ExportIcon />
               Export CSV
             </button>
           </li>
         ))}
       </ul>
     </section>
+  )
+}
+
+function ExportIcon() {
+  return (
+    <svg className="shrink-0" width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M12 3v12M7 10l5 5 5-5M5 21h14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
   )
 }

@@ -1,29 +1,37 @@
 import { useMemo, useState } from 'react'
 import { useParams } from 'react-router'
+import FilterPill from '../components/admin/FilterPill'
+import TeacherAccountMenu from '../components/customer/TeacherAccountMenu'
 import KitBuilderRequestForm from '../components/kits/KitBuilderRequestForm'
 import KitMakerCart from '../components/kits/KitMakerCart'
 import KitMakerCategories from '../components/kits/KitMakerCategories'
 import KitMakerProductList from '../components/kits/KitMakerProductList'
 import OrderOverviewModal from '../components/kits/OrderOverviewModal'
 import ProductImportPanel from '../components/products/ProductImportPanel'
+import SortSelect from '../components/ui/SortSelect'
 import { kitMakerProducts } from '../data/kitMakerProducts'
+import { useDebouncedValue } from '../hooks/useDebouncedValue'
 import { useUniversityByLoginCode } from '../hooks/useUniversityByLoginCode'
 
-function UserIcon() {
-  return (
-    <svg width="30" height="30" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path
-        d="M20 21a8 8 0 0 0-16 0M12 13a5 5 0 1 0 0-10 5 5 0 0 0 0 10Z"
-        fill="currentColor"
-      />
-    </svg>
-  )
-}
+const SORT_OPTIONS = [
+  { id: 'name', label: 'Name' },
+  { id: 'priceLow', label: 'Lowest price' },
+  { id: 'priceHigh', label: 'Highest price' },
+]
+
+const PRICE_FILTERS = [
+  { id: 'all', label: 'All prices' },
+  { id: 'under100', label: 'Under 100 kr' },
+  { id: '100plus', label: '100 kr+' },
+]
 
 export default function MakeYourOwnKitPage() {
   const { loginCode } = useParams()
   const [activeCategory, setActiveCategory] = useState('Microcontrollers')
   const [query, setQuery] = useState('')
+  const debouncedQuery = useDebouncedValue(query)
+  const [sortValue, setSortValue] = useState('name')
+  const [priceFilter, setPriceFilter] = useState('all')
   const [view, setView] = useState('list')
   const [cartItems, setCartItems] = useState([])
   const [importSummary, setImportSummary] = useState(null)
@@ -32,15 +40,28 @@ export default function MakeYourOwnKitPage() {
   const university = useUniversityByLoginCode(loginCode)
 
   const filteredProducts = useMemo(() => {
-    const normalizedQuery = query.trim().toLowerCase()
-    return kitMakerProducts.filter(
-      (product) =>
+    const normalizedQuery = debouncedQuery.trim().toLowerCase()
+    const filtered = kitMakerProducts.filter((product) => {
+      const matchesPrice =
+        priceFilter === 'all' ||
+        (priceFilter === 'under100' && product.price < 100) ||
+        (priceFilter === '100plus' && product.price >= 100)
+
+      return (
         product.category === activeCategory &&
+        matchesPrice &&
         (!normalizedQuery ||
           product.name.toLowerCase().includes(normalizedQuery) ||
-          product.subtitle.toLowerCase().includes(normalizedQuery)),
-    )
-  }, [activeCategory, query])
+          product.subtitle.toLowerCase().includes(normalizedQuery))
+      )
+    })
+
+    return [...filtered].sort((a, b) => {
+      if (sortValue === 'priceLow') return a.price - b.price
+      if (sortValue === 'priceHigh') return b.price - a.price
+      return a.name.localeCompare(b.name)
+    })
+  }, [activeCategory, debouncedQuery, priceFilter, sortValue])
 
   if (!university) {
     return (
@@ -120,10 +141,7 @@ export default function MakeYourOwnKitPage() {
                 requirements.
               </p>
             </div>
-            <div className="flex items-center gap-3 text-base lg:hidden">
-              <span>{university.name}</span>
-              <UserIcon />
-            </div>
+            <TeacherAccountMenu university={university} className="lg:hidden" />
           </header>
 
           <div className="mt-12">
@@ -149,11 +167,33 @@ export default function MakeYourOwnKitPage() {
             <span className="mb-4 block text-base text-text">Search by keywords</span>
             <input
               type="search"
+              placeholder="Search by component name or chip variant..."
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               className="w-full rounded-xl border border-accent-2 bg-transparent px-4 py-3 font-body text-base text-text outline-none"
             />
           </label>
+          <p className="m-0 mt-3 min-h-5 text-sm font-medium text-text-secondary" aria-live="polite">
+            {query !== debouncedQuery ? 'Searching...' : ' '}
+          </p>
+
+          <div className="mt-6 flex flex-wrap items-center gap-3">
+            <SortSelect
+              value={sortValue}
+              options={SORT_OPTIONS}
+              onChange={setSortValue}
+            />
+            <div className="flex flex-wrap gap-2" role="group" aria-label="Filter by price">
+              {PRICE_FILTERS.map((filter) => (
+                <FilterPill
+                  key={filter.id}
+                  label={filter.label}
+                  active={priceFilter === filter.id}
+                  onClick={() => setPriceFilter(filter.id)}
+                />
+              ))}
+            </div>
+          </div>
 
           <div className="mt-16">
             <KitMakerProductList
@@ -161,6 +201,7 @@ export default function MakeYourOwnKitPage() {
               view={view}
               onViewChange={setView}
               onAdd={handleAdd}
+              emptyMessage="No components match your filters."
             />
           </div>
 
@@ -186,10 +227,7 @@ export default function MakeYourOwnKitPage() {
         </div>
 
         <div>
-          <div className="mb-10 hidden items-center justify-end gap-3 text-base lg:flex">
-            <span>{university.name}</span>
-            <UserIcon />
-          </div>
+          <TeacherAccountMenu university={university} className="mb-10 hidden justify-end lg:flex" />
           <KitMakerCart
             key={importSummary?.fileName ?? 'manual-cart'}
             items={cartItems}

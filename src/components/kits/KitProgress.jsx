@@ -1,5 +1,6 @@
 import { KIT_PROGRESS_STEPS } from '../../data/kits'
 import { cn } from '../../lib/cn'
+import HelpTooltip from '../ui/HelpTooltip'
 
 function StepNode({ state }) {
   return (
@@ -34,7 +35,12 @@ export default function KitProgress({ progressStep = 0 }) {
       className={cn('rounded-[20px] bg-background-secondary px-6 py-5 max-sm:rounded-2xl max-sm:px-4')}
       aria-label="Kit status progress"
     >
-      <h2 className={cn('m-0 mb-6 font-body text-base font-semibold text-text')}>Status</h2>
+      <h2 className={cn('m-0 mb-6 flex items-center gap-2 font-body text-base font-semibold text-text')}>
+        Status
+        <HelpTooltip label="Progress help">
+          Shows where the kit is in the review and ordering workflow.
+        </HelpTooltip>
+      </h2>
 
       <div className="relative">
         <div
