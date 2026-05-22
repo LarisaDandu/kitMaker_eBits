@@ -639,11 +639,58 @@ The result is used differently depending on the screen. On the customer dashboar
 
 `HelpTooltip` wraps a `?` icon and reveals guidance on hover or keyboard focus. It is used on metrics like components checked, components approved, total kits, progress, and pricing.
 
+```jsx
+<span className="flex items-center gap-2 text-sm font-medium text-text-secondary">
+  Components checked
+  <HelpTooltip label="Components checked help">
+    How many quoted components have been reviewed so far.
+  </HelpTooltip>
+</span>
+```
+
 `ConfirmDialog` is the modal used before destructive customer deletion. It receives labels and callbacks, so it is not tied to one feature.
+
+```jsx
+{pendingDelete ? (
+  <ConfirmDialog
+    title={`Delete ${pendingDelete.name}?`}
+    description="This customer will be hidden from the client list. You can undo the deletion for a short time after confirming."
+    confirmLabel="Delete customer"
+    onCancel={() => setPendingDelete(null)}
+    onConfirm={handleConfirmDelete}
+  />
+) : null}
+```
 
 `UndoToast` is the recovery notification after a customer is deleted. It has one action button and one dismiss button. The timer logic stays in the page, not in the toast, because the page owns the deleted customer state.
 
+```jsx
+{undoToast ? (
+  <UndoToast
+    message={`${undoToast.name} deleted.`}
+    onAction={handleUndoDelete}
+    onClose={handleDismissUndo}
+  />
+) : null}
+```
+
+The page starts an eight-second timer when the toast appears. Undo clears the timer and restores the customer; dismissing removes the customer immediately.
+
 `SortSelect` is a styled `<select>` used by admin lists, product lists, and kit-builder pages. The sorting rules still live in the page that owns the data.
+
+```jsx
+const SORT_OPTIONS = [
+  { id: 'name', label: 'Name' },
+  { id: 'priceLow', label: 'Lowest price' },
+  { id: 'priceHigh', label: 'Highest price' },
+]
+
+<SortSelect
+  value={sortValue}
+  options={SORT_OPTIONS}
+  onChange={setSortValue}
+/>
+```
 
 ## Styling
 
@@ -689,7 +736,7 @@ That makes the code easier to trace. If a customer card looks wrong, check the c
 All persistence is in memory. Admin password checking happens in the browser. University login codes are also checked in the browser. Export and submit actions still use demo alerts in places where a real app would call an API. Once again this was done to protect eBits intelectual property as well as allow their own implementation into their own custom business OS.
 
 
-## Suggested next technical steps
+## Next technical steps
 
 The next step would be to define a backend contract for universities, products, review replies, and kit status changes. After that, the `UniversitiesProvider` could be replaced with API-backed state, probably using a query/mutation library. Admin authentication should move out of the frontend. Customer login codes could stay as access links or become part of an invite flow.
 
