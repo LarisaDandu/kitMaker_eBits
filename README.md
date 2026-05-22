@@ -1,192 +1,282 @@
-# eBits Kitmaker
+# eBits Kit Maker
 
-Frontend prototype for ordering and managing university electronics kits. React + Vite, no backend yet—data is hard-coded in `src/data/` and kept in memory for the session.
+This project is a React and Vite prototype for the eBits kit ordering workflow. It covers two main user groups: eBits staff, who manage university customers and kit progress, and university contacts, who review orders or build new kits from a catalog.
 
-## What you can do in the app
+There is no backend in this version. The app uses static seed data from `src/data/`, then keeps changes in React state for the current browser session. That means customer creation, editing, soft deletion, kit progress, product review choices, cart contents, imported spreadsheets, and undo notifications all work in the UI, but they reset when the app reloads.
 
-| Who | URL | What it’s for |
-|-----|-----|----------------|
-| Anyone | `/`, `/about` | Simple public pages |
-| eBits staff | `/admin` | Client list, customer details, advance kit status |
-| University contact | `/orders/:loginCode` | Their orders, component review, kit builder |
+## Running the project
 
-Customer links use a **login code in the URL** (e.g. `/orders/BUS-A1B2/dashboard`). There’s no real login—whoever has the link sees that customer’s demo data.
-
-Try these seed codes from `src/data/universities.js`: `BUS-A1B2`, `ACA-C3D4`.
-
-## Run it locally
+Install dependencies and start the local development server:
 
 ```bash
 npm install
 npm run dev
 ```
 
-Other scripts: `npm run build`, `npm run preview`, `npm run lint`.
+Useful scripts:
 
-## Where the real logic lives
-
-Most files under `src/components/` are **UI widgets**: they take props, apply Tailwind classes, and render. They don’t own business rules.
-
-The interesting behavior is split like this:
-
-| Layer | Files | What it does |
-|-------|--------|----------------|
-| **Seed data** | `src/data/*.js` | Universities, products, kit catalog, status labels |
-| **Session state** | `src/context/UniversitiesContext.jsx` | Add/edit/delete customers; bump kit `progressStep` on admin |
-| **Helpers** | `src/lib/*.js` | Form mapping, login codes, kit step stats, `cn()`, DKK formatting |
-| **Pages** | `src/pages/**/*.jsx` | Wire routes, filters, local state (cart, reviews), pass data into widgets |
-| **Hooks** | `src/hooks/*.js` | Look up university by `loginCode` from context |
-
-`window.alert` is used in a lot of places for actions that would hit an API later (export CSV, submit order, logout).
-
-## Project layout
-
-```
-src/
-├── App.jsx              # All routes
-├── data/                # Static JSON-like modules (source of truth for demo)
-├── context/             # Universities in React state
-├── hooks/               # useUniversities, useUniversityByLoginCode
-├── lib/                 # Small pure functions
-├── pages/               # One screen per route (admin + customer + public)
-└── components/
-    ├── ui/              # Button, inputs, shared styles
-    ├── admin/           # Header, search bar, filter pills
-    ├── kits/            # Kit cards, progress bar, cart, modals
-    ├── products/        # Product rows/cards
-    └── universities/    # Customer form and list cards
+```bash
+npm run build
+npm run preview
+npm run lint
 ```
 
-Colors and fonts are in `src/index.css` (`@theme` for Tailwind v4).
+The Vite base path is configured for GitHub Pages at `/kitMaker_eBits/`, so local URLs usually look like:
 
-## Routes (three separate areas)
+```text
+http://localhost:5173/kitMaker_eBits/
+```
+
+## How the website functions
+
+The first screen is the login page. It has two modes: university login and admin login. Admin login uses the password `admin` and sends the user to `/admin`. University login checks the entered school code against each university's `loginCode` in `src/data/universities.js`, then sends the user to `/orders/:loginCode`.
+
+Example seed codes include:
+
+```text
+BUS-A1B2
+ACA-C3D4
+```
+
+The admin side starts at `/admin`. Staff can view customers, search, filter, sort, create or edit universities, open a customer dashboard, advance a kit through its progress steps, and delete a customer with confirmation. Deletion is a soft delete first: the customer disappears from the visible list, a toast appears, and the user has a short window to undo it. If they do not undo, the customer is removed from the in-memory state.
+
+The university side starts at `/orders/:loginCode`. The customer can see current and previous orders, open the dashboard for the active order, review components, and go into the kit builder. The kit builder has two paths: premade kits and make-your-own kits. Both use local cart state and confirmation modals. The make-your-own flow can also import a CSV or XLSX sheet and turn it into cart/product data.
+
+## Main architecture
+
+The app is organized around routes, pages, context, data modules, utility functions, and mostly prop-driven components.
+
+`src/App.jsx` defines the route tree. Admin routes and order routes each get wrapped in `UniversitiesProvider`, which gives those screens access to the in-memory university state. The login page does not need that provider because it reads directly from seed data.
 
 ```jsx
-// src/App.jsx — simplified
-/orders/:loginCode          → customer portal (UniversitiesProvider)
-/admin                      → staff tools (same provider, separate mount)
-/                           → public Layout with Home / About
+function OrdersLayout() {
+  return (
+    <UniversitiesProvider>
+      <Outlet />
+    </UniversitiesProvider>
+  )
+}
+
+<Route path="/orders/:loginCode" element={<OrdersLayout />}>
+  <Route index element={<CustomerOrdersPage />} />
+  <Route path="dashboard" element={<CustomerKitDashboardPage />} />
+  <Route path="kit-builder/custom" element={<MakeYourOwnKitPage />} />
+</Route>
 ```
 
-`UniversitiesProvider` wraps **only** `/admin` and `/orders/*`, not the whole app. Public pages don’t load that context.
+Most files in `src/components/` are intentionally simple. They are close to glorified widgets: styled building blocks that receive data through props, render it, and call callbacks when the user interacts with them. They do not own the main business rules. A card component may show a delete button, but the decision about what deletion means lives higher up in a page or in context. A product list may render filtered products, but the filter logic belongs to the page.
 
-Note: admin and customer each get their **own** provider instance when you navigate between those trees. Edits in admin won’t show on a customer tab you already had open unless you refresh. Fine for a demo; you’d use one provider (or an API) in production.
+That split is visible in the admin customer list. `UniversityList` renders whatever universities it receives. It does not know how search works, how sorting works, or how deletion is implemented.
 
-## Data files
-
-| File | Contents |
-|------|-----------|
-| `data/universities.js` | Schools, kit info, pricing, `progressStep`, `loginCode`, previous orders |
-| `data/products.js` | Components per university (`universityId`), statuses, optional seed replies |
-| `data/kitMakerProducts.js` | Catalog for “make your own kit” |
-| `data/kits.js` | Labels for the progress timeline |
-
-Products aren’t nested inside a university object. Pages call:
-
-```js
-getProductsByUniversity(university.id)  // filter in data/products.js
-```
-
-## What pages actually do
-
-**Admin**
-
-- `ClientsOverview` — reads `universities` from context, filters locally, lists cards.
-- `UniversityDetailPage` — one customer, products from `products.js`, “Advance order” calls `advanceKitOrder`.
-- `CustomerFormPage` — create/edit via `CustomerForm` + `formValuesToUniversity`.
-
-**Customer** (`loginCode` from URL → `useUniversityByLoginCode`)
-
-- `CustomerOrdersPage` — current + previous order cards.
-- `CustomerKitDashboardPage` — product grid; review choices live in **page state** (`reviews`), not in `products.js`.
-- `MakeYourOwnKitPage` — category filter, cart in **page state**, submit opens a modal.
-
-If the code isn’t in a page, context, or `data/`/`lib/`, it’s probably just presentation.
-
-## Components (honest breakdown)
-
-### Shared UI (`components/ui/`)
-
-- `Button`, `buttonStyles` — variants/sizes; `buttonClassName` also used on `<Link>` on Home.
-- `FormField`, `FormInput` — labeled inputs for the customer form.
-- `cn()` in `lib/cn.js` — `clsx` + `tailwind-merge` for class strings.
-
-### Reused chrome
-
-- `SearchFilterPanel` — search input + filter pills; parent owns query state and filter logic.
-- `SearchFilterBar` — admin wrapper that adds “Create customer”.
-- `AdminHeader` — title + logout (demo alert).
-
-### Kit / order widgets (`components/kits/`)
-
-Mostly display `university.kit` or cart props:
-
-- `KitProgress` — draws steps from `KIT_PROGRESS_STEPS` + `progressStep` number.
-- `KitOverview`, `KitPrice`, `CustomerOrderCard` — show fields from the kit object.
-- `KitMakerCart`, `QuantityStepper` — cart UI; totals calculated in the cart component from props.
-- `AdvanceOrderButton` — disabled when step is max; click handled on the page/context.
-- Modals — confirm/cancel only.
-
-### Product widgets (`components/products/`)
-
-- `ProductCard` / `ProductList` — admin list styling.
-- `CustomerProductCard` — same idea plus approve/reject/changes UI; calls `onApply` up to the dashboard page.
-
-### University widgets (`components/universities/`)
-
-- `UniversityCard`, `UniversityList`, `UniversityInfo` — show/delete/navigate.
-- `CustomerForm` — controlled form; submit goes back to the page.
-
-None of these fetch from a server. They receive data from the parent page or from constants in `data/`.
-
-## Behavior worth knowing
-
-### Login code in the URL
-
-```js
-// hooks/useUniversityByLoginCode.js
-universities.find(
-  (item) => item.loginCode.toLowerCase() === loginCode.trim().toLowerCase()
-)
-```
-
-Wrong or missing code → “Order not found” screen.
-
-### Advancing a kit (admin)
-
-`progressStep` is an index into six strings in `data/kits.js`. Clicking advance increments it and fills stats from presets in `lib/kitProgress.js` (demo numbers, not a real inventory system).
-
-```js
-// context/UniversitiesContext.jsx — idea
-kit: {
-  ...uni.kit,
-  progressStep: nextStep,
-  stats: getStatsForProgressStep(nextStep, ...),
+```jsx
+export default function UniversityList({
+  universities,
+  onDelete,
+  emptyMessage = 'No customers match your filters.',
+}) {
+  return (
+    <section aria-label="Client list">
+      {universities.length === 0 ? (
+        <p>{emptyMessage}</p>
+      ) : (
+        universities.map((university) => (
+          <UniversityCard
+            key={university.id}
+            university={university}
+            onDelete={(id) => onDelete(id, university.name)}
+          />
+        ))
+      )}
+    </section>
+  )
 }
 ```
 
-`KitProgress` only reads `progressStep` and marks steps complete / current / upcoming.
-
-### Customer reviews
-
-Seed data may include `customerReply` on a product. The dashboard also keeps `reviews` in `useState` so you can approve/reject during the session without editing `products.js`.
-
-### Kit builder cart
-
-`MakeYourOwnKitPage` holds `cartItems`. Adding the same product again increases quantity. Submit shows `OrderOverviewModal`; confirm clears cart and shows an alert.
-
-## Code worth a closer look
-
-These are the parts that do more than “render props.” They’re still small—nothing magic—but they’re written in a way that’s easy to follow and would survive a backend swap later.
-
-### 1. `advanceKitOrder` — one place updates kit + status
-
-Admin “Advance order” runs this in context. It only touches the matching university, bails if already at the last step, and keeps kit totals while swapping in preset stats for the new step.
+The page decides which customers are visible:
 
 ```js
-// src/context/UniversitiesContext.jsx
+const filteredUniversities = useMemo(
+  () =>
+    filterUniversities(
+      universities,
+      debouncedSearchQuery,
+      activeFilter,
+      sortValue,
+    ),
+  [universities, debouncedSearchQuery, activeFilter, sortValue],
+)
+```
+
+This keeps the components reusable. `SearchFilterPanel`, `SortSelect`, `FilterPill`, `ConfirmDialog`, `UndoToast`, and `HelpTooltip` are shared UI pieces. They are styled and accessible enough to use in different contexts, but they avoid knowing the app's domain model.
+
+## Data and state
+
+The static demo data lives in:
+
+```text
+src/data/universities.js
+src/data/products.js
+src/data/kitMakerProducts.js
+src/data/kits.js
+```
+
+`universities.js` contains school records, login codes, addresses, current kit information, pricing, progress, and previous orders. `products.js` contains product rows connected to a university by `universityId`. `kitMakerProducts.js` is the catalog used for the make-your-own kit flow. `kits.js` stores the labels for the status timeline.
+
+The main state container is `src/context/UniversitiesContext.jsx`. It starts by adding session metadata to the seed universities:
+
+```js
+function withMetadata(universities) {
+  const initialTimestamp = new Date().toISOString()
+
+  return universities.map((university) => ({
+    ...university,
+    lastUpdatedAt: initialTimestamp,
+    deletedAt: null,
+  }))
+}
+```
+
+The provider stores every university in `allUniversities`, then exposes only non-deleted records:
+
+```js
+const [allUniversities, setAllUniversities] = useState(() =>
+  withMetadata(seedUniversities),
+)
+
+const universities = useMemo(
+  () => allUniversities.filter((uni) => !uni.deletedAt),
+  [allUniversities],
+)
+```
+
+That is why soft delete is possible. The university is not immediately removed from memory. It gets a `deletedAt` timestamp, drops out of normal lists, and can still be restored by the undo toast.
+
+```js
+const softDeleteUniversity = useCallback((id) => {
+  const deletedAt = new Date().toISOString()
+  setAllUniversities((prev) =>
+    prev.map((uni) =>
+      uni.id === id
+        ? {
+            ...uni,
+            deletedAt,
+            lastUpdatedAt: deletedAt,
+          }
+        : uni,
+    ),
+  )
+}, [])
+```
+
+The hard removal is a separate operation:
+
+```js
+const removeUniversity = useCallback((id) => {
+  setAllUniversities((prev) => prev.filter((uni) => uni.id !== id))
+}, [])
+```
+
+This is a clean example of separating "hide this from the user now" from "remove this from state completely". In a backend version, those would likely become different API operations or one delete operation with a recoverable status.
+
+## Login and routing
+
+The login page has local form state. For admin, it checks the password directly. For university login, it searches the seed universities for a matching code and routes to the order area.
+
+The customer pages use the URL code to find the active school:
+
+```js
+export function useUniversityByLoginCode(loginCode) {
+  const { universities } = useUniversities()
+
+  return useMemo(() => {
+    const normalizedCode = loginCode?.trim().toLowerCase()
+
+    return universities.find(
+      (item) => item.loginCode.toLowerCase() === normalizedCode,
+    )
+  }, [loginCode, universities])
+}
+```
+
+This is simple, but it is also the main link between the route and the data model. A wrong login code gives the customer an "Order not found" style screen instead of crashing.
+
+The teacher account menu is another small routing feature. It lives close to the school name on teacher pages and links back to the right places using the current `loginCode`: sign out goes to `/`, dashboard goes to `/orders/:loginCode/dashboard`, and orders goes to `/orders/:loginCode`.
+
+## Admin workflow
+
+The admin overview is a local client-management screen. It supports search, status filters, sorting, empty states, timestamps, confirmation dialogs, and undoable deletion. The search is debounced so the UI can show a short "Searching..." state before the filtered list updates.
+
+The filtering function is plain JavaScript:
+
+```js
+function filterUniversities(list, searchQuery, statusFilter, sortValue) {
+  const query = searchQuery.trim().toLowerCase()
+
+  const filtered = list.filter((uni) => {
+    const matchesStatus = statusFilter === 'all' || uni.status === statusFilter
+    const matchesSearch =
+      !query ||
+      uni.name.toLowerCase().includes(query) ||
+      uni.professorName?.toLowerCase().includes(query) ||
+      uni.email?.toLowerCase().includes(query) ||
+      uni.ean?.toLowerCase().includes(query) ||
+      uni.loginCode?.toLowerCase().includes(query) ||
+      uni.kit.name.toLowerCase().includes(query) ||
+      uni.kit.quoteId.includes(query)
+
+    return matchesStatus && matchesSearch
+  })
+
+  return [...filtered].sort((a, b) => {
+    if (sortValue === 'name') return a.name.localeCompare(b.name)
+    if (sortValue === 'status') return a.status.localeCompare(b.status)
+    if (sortValue === 'progress') {
+      return (b.kit.progressStep ?? 0) - (a.kit.progressStep ?? 0)
+    }
+    return new Date(b.lastUpdatedAt ?? 0) - new Date(a.lastUpdatedAt ?? 0)
+  })
+}
+```
+
+There is no hidden search library. The code normalizes the query, checks a few known fields, then sorts the result. This is easy to expand later if new searchable fields are added.
+
+Delete is handled in a more careful way than a native `window.confirm`. The page stores the pending customer, opens `ConfirmDialog`, soft-deletes after confirmation, then shows `UndoToast`.
+
+```js
+function handleConfirmDelete() {
+  if (!pendingDelete) return
+
+  softDeleteUniversity(pendingDelete.id)
+  showUndoToast(pendingDelete)
+  setPendingDelete(null)
+}
+```
+
+The toast starts an eight-second timer. Undo clears the timer and restores the customer. Dismissing the toast removes the customer immediately.
+
+```js
+function handleUndoDelete() {
+  if (!undoToast) return
+
+  const timerId = deleteTimers.current.get(undoToast.id)
+  if (timerId) window.clearTimeout(timerId)
+  deleteTimers.current.delete(undoToast.id)
+  restoreUniversity(undoToast.id)
+  setUndoToast(null)
+}
+```
+
+The customer detail page shows the same idea from a different route. If a customer is deleted from detail view, the app navigates back to `/admin` and passes the deleted customer through route state so the overview can show the undo toast.
+
+## Kit progress
+
+Kit progress is controlled by one number: `progressStep`. The labels live in `src/data/kits.js`, and the stats for each step are generated in `src/lib/kitProgress.js`.
+
+When staff click "Advance order", context updates only the matching university:
+
+```js
 const advanceKitOrder = useCallback((id) => {
-  setUniversities((prev) =>
+  setAllUniversities((prev) =>
     prev.map((uni) => {
       if (uni.id !== id) return uni
 
@@ -199,6 +289,7 @@ const advanceKitOrder = useCallback((id) => {
 
       return {
         ...uni,
+        lastUpdatedAt: new Date().toISOString(),
         status:
           nextStep >= maxStep
             ? UNIVERSITY_STATUS.ACTIVE_ORDER
@@ -220,29 +311,9 @@ const advanceKitOrder = useCallback((id) => {
 }, [])
 ```
 
-The demo stats table lives separately so the UI doesn’t invent numbers inline:
-
-```js
-// src/lib/kitProgress.js
-export function getStatsForProgressStep(step, totalComponents, totalKits) {
-  const preset = KIT_STEP_STATS[Math.min(step, KIT_STEP_STATS.length - 1)]
-  return {
-    checked: preset.checked,
-    approved: preset.approved,
-    required: preset.required,
-    rejected: preset.required,
-    totalComponents,
-    totalKits,
-  }
-}
-```
-
-### 2. `KitProgress` — one number drives the whole timeline
-
-Step labels come from `data/kits.js`. The component only needs `progressStep` (0–5). Each dot is derived with a simple comparison—no parallel state for “which step is active.”
+The interesting part is that the UI does not store a separate "current step" state. `KitProgress` derives each node from the number:
 
 ```jsx
-// src/components/kits/KitProgress.jsx
 {KIT_PROGRESS_STEPS.map((label, index) => {
   const state =
     index < progressStep
@@ -260,16 +331,13 @@ Step labels come from `data/kits.js`. The component only needs `progressStep` (0
 })}
 ```
 
-Same data feeds admin detail and customer dashboard; only the styling wrapper changes.
+This makes the timeline predictable. If the progress number changes, the visual state follows.
 
-### 3. Customer reviews — seed data + session overlay
+## Product review dashboard
 
-Products in `products.js` can ship with a `customerReply`. The dashboard also builds a `reviews` object so clicks don’t mutate the seed file.
-
-Bootstrap from seed:
+The teacher dashboard shows products for one university. Products come from `src/data/products.js`, but review choices are held in page state. Seed data can include `customerReply`, and the dashboard turns those replies into an initial `reviews` object:
 
 ```js
-// src/pages/CustomerKitDashboardPage.jsx
 function getInitialReviews(products) {
   return products.reduce((reviews, product) => {
     if (product.customerReply) {
@@ -280,17 +348,7 @@ function getInitialReviews(products) {
 }
 ```
 
-Filter “Awaiting approval” checks the overlay, not the product row:
-
-```js
-const review = reviews[product.id]
-const matchesStatus =
-  activeFilter === 'all' ||
-  (activeFilter === 'awaiting' && !review?.status) ||
-  review?.status === activeFilter
-```
-
-Apply / undo stays on the page; the card just calls `onApply`:
+When a user approves, rejects, or requests changes, the page updates the `reviews` object. The product card is still just a widget. It displays the current state and calls `onApply` when the user commits a choice.
 
 ```js
 function handleApplyReview(productId, review) {
@@ -303,68 +361,38 @@ function handleApplyReview(productId, review) {
 }
 ```
 
-`CustomerProductCard` is mostly UI, but `CustomerDecision` is a nice self-contained bit: `useId()` for radio groups (so many cards on one page don’t clash), draft state until Apply, then read-only until “Change” clears via `onApply(id, null)`.
-
-### 4. `formValuesToUniversity` — edit form without wiping the kit
-
-Create and edit share one mapper. New customers get a default kit; edits spread the form over the existing record so `kit` and `previousOrders` stay put.
+The dashboard also supports searching, filtering by review status, and sorting by quote row, name, or status. Like the admin screen, the search input uses a debounced value:
 
 ```js
-// src/lib/universityUtils.js
-export function formValuesToUniversity(form, existing) {
-  const base = existing ?? {
-    id: generateUniversityId(),
-    status: UNIVERSITY_STATUS.REQUIRES_CHANGES,
-    kit: createDefaultKit(),
-    previousOrders: [],
-  }
+const [searchQuery, setSearchQuery] = useState('')
+const debouncedSearchQuery = useDebouncedValue(searchQuery)
+```
 
-  return {
-    ...base,
-    name: form.name.trim(),
-    professorName: form.professorName.trim(),
-    // ...other fields trimmed the same way
-    loginCode: form.loginCode.trim(),
-  }
+The hook itself is small:
+
+```js
+export function useDebouncedValue(value, delay = 250) {
+  const [debouncedValue, setDebouncedValue] = useState(value)
+
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => {
+      setDebouncedValue(value)
+    }, delay)
+
+    return () => window.clearTimeout(timeoutId)
+  }, [delay, value])
+
+  return debouncedValue
 }
 ```
 
-`updateUniversity` in context is then a one-liner map: `formValuesToUniversity(formValues, uni)`.
+This is enough to support a visible "Searching..." state without bringing in extra dependencies.
 
-### 5. `filterUniversities` — boring on purpose
+## Kit builder
 
-Search + status filter is a plain function outside the component. Easy to read, easy to test later, wrapped in `useMemo` so the list doesn’t re-filter every render for no reason.
+The kit-builder pages are local cart flows. They do not persist orders, but they model the structure of the interaction: choose products, update quantities, review an order modal, and confirm.
 
-```js
-// src/pages/admin/ClientsOverview.jsx
-function filterUniversities(list, searchQuery, statusFilter) {
-  const query = searchQuery.trim().toLowerCase()
-
-  return list.filter((uni) => {
-    const matchesStatus = statusFilter === 'all' || uni.status === statusFilter
-    const matchesSearch =
-      !query ||
-      uni.name.toLowerCase().includes(query) ||
-      uni.loginCode?.toLowerCase().includes(query) ||
-      uni.kit.name.toLowerCase().includes(query) ||
-      uni.kit.quoteId.includes(query)
-      // ...more fields
-
-    return matchesStatus && matchesSearch
-  })
-}
-
-const filteredUniversities = useMemo(
-  () => filterUniversities(universities, searchQuery, activeFilter),
-  [universities, searchQuery, activeFilter],
-)
-```
-
-`UniversityDetailPage` and the customer dashboard do the same pattern for products with their own filter helpers.
-
-### 6. Kit builder cart — merge duplicate lines
-
-Cart state lives on `MakeYourOwnKitPage`. Adding the same catalog item again bumps quantity instead of a second row.
+Adding a product merges duplicate rows by increasing quantity:
 
 ```js
 function handleAdd(product, quantity) {
@@ -382,51 +410,263 @@ function handleAdd(product, quantity) {
 }
 ```
 
-`KitMakerCart` multiplies `price * quantity * kitCount` for the estimate—that’s arithmetic in the widget, but the line-item rules stay in the page.
+The make-your-own and add-components pages filter by category first, then by search text and price band. They can sort by name, lowest price, or highest price. Premade kits use a similar pattern, with sorting by name, price, or component count.
 
-### 7. Routes + scoped provider
+The cart components calculate totals from the items they receive. The pages decide what goes into the cart; the cart widget decides how to display it.
 
-Customer URLs nest under one layout that adds context; public routes don’t.
+## Importing CSV and XLSX files
 
-```jsx
-// src/App.jsx
-function OrdersLayout() {
-  return (
-    <UniversitiesProvider>
-      <Outlet />
-    </UniversitiesProvider>
-  )
-}
-
-<Route path="/orders/:loginCode" element={<OrdersLayout />}>
-  <Route index element={<CustomerOrdersPage />} />
-  <Route path="dashboard" element={<CustomerKitDashboardPage />} />
-  {/* ... */}
-</Route>
-```
-
-`useUniversityByLoginCode` is the glue from `:loginCode` to context:
+The parser is in `src/lib/orderSheetParser.js`. It accepts `.csv` and `.xlsx` files, reads them in the browser, extracts product rows, and returns a normalized object:
 
 ```js
-return useMemo(() => {
-  const normalizedCode = loginCode?.trim().toLowerCase()
-  return universities.find(
-    (item) => item.loginCode.toLowerCase() === normalizedCode,
-  )
-}, [loginCode, universities])
-```
-
-And `useUniversities` fails fast if someone uses the hook outside a provider—helps catch wiring mistakes early:
-
-```js
-if (!context) {
-  throw new Error('useUniversities must be used within UniversitiesProvider')
+{
+  fileName,
+  kitCount,
+  products,
 }
 ```
 
-### 8. Small utilities that show up everywhere
+`ProductImportPanel` checks file size before parsing. The default limit is 5 MB:
 
-**`cn()`** — conditional classes without Tailwind conflicts:
+```js
+if (file.size > maxFileSizeMb * 1024 * 1024) {
+  setError(
+    `This file is too large. Please upload a CSV or XLSX under ${maxFileSizeMb} MB.`,
+  )
+  event.target.value = ''
+  return
+}
+```
+
+After validation, the file is read as an `ArrayBuffer` and handed to the parser:
+
+```js
+export async function parseOrderSheetFile(file) {
+  if (!file) {
+    throw new Error('Choose a CSV or XLSX file to import.')
+  }
+
+  const arrayBuffer = await file.arrayBuffer()
+  return parseOrderSheetBuffer(arrayBuffer, file.name)
+}
+```
+
+The entry point branches by extension:
+
+```js
+export async function parseOrderSheetBuffer(arrayBuffer, fileName = 'order-sheet') {
+  const lowerName = fileName.toLowerCase()
+
+  if (lowerName.endsWith('.csv')) {
+    const text = new TextDecoder().decode(arrayBuffer)
+    return buildProducts(parseCsvRows(text), new Map(), fileName)
+  }
+
+  if (lowerName.endsWith('.xlsx')) {
+    const { rows, imagesByRow } = await parseXlsxRows(arrayBuffer)
+    return buildProducts(rows, imagesByRow, fileName)
+  }
+
+  throw new Error('Please upload a CSV or XLSX file.')
+}
+```
+
+CSV parsing is done manually because the expected format is simple. The parser walks each character, tracks whether it is inside quotes, handles escaped double quotes, splits on commas outside quotes, and handles both Unix and Windows line endings.
+
+```js
+function parseCsvRows(text) {
+  const rows = []
+  let row = []
+  let cell = ''
+  let inQuotes = false
+
+  for (let index = 0; index < text.length; index += 1) {
+    const char = text[index]
+    const next = text[index + 1]
+
+    if (char === '"' && inQuotes && next === '"') {
+      cell += '"'
+      index += 1
+    } else if (char === '"') {
+      inQuotes = !inQuotes
+    } else if (char === ',' && !inQuotes) {
+      row.push(cell.trim())
+      cell = ''
+    } else if ((char === '\n' || char === '\r') && !inQuotes) {
+      if (char === '\r' && next === '\n') index += 1
+      row.push(cell.trim())
+      if (row.some(Boolean)) rows.push(row)
+      row = []
+      cell = ''
+    } else {
+      cell += char
+    }
+  }
+
+  row.push(cell.trim())
+  if (row.some(Boolean)) rows.push(row)
+
+  return rows.map((values, index) => ({
+    number: index + 1,
+    cells: values.reduce((cells, value, cellIndex) => {
+      const column = String.fromCharCode(65 + cellIndex)
+      cells[column] = { value, link: '' }
+      return cells
+    }, {}),
+    values,
+  }))
+}
+```
+
+XLSX parsing is more involved. `.xlsx` files are zip archives, so the code uses `JSZip` to read XML files inside the workbook. It reads workbook metadata, finds the first sheet, reads shared strings, follows relationship files, extracts hyperlinks, and looks for embedded images attached to rows.
+
+The helper functions work with XML by local tag name because Excel XML often uses namespace prefixes:
+
+```js
+function getLocalName(element) {
+  return element.localName || element.nodeName.split(':').pop()
+}
+
+function elementsByName(root, localName) {
+  return Array.from(root.getElementsByTagName('*')).filter(
+    (element) => getLocalName(element) === localName,
+  )
+}
+```
+
+Shared strings are important because Excel may store text in a central string table instead of directly in each cell:
+
+```js
+function getCellText(cell, sharedStrings) {
+  const type = cell.getAttribute('t')
+  const valueNode = firstChildByName(cell, 'v')
+
+  if (type === 's') {
+    const index = Number.parseInt(valueNode?.textContent ?? '', 10)
+    return sharedStrings[index] ?? ''
+  }
+
+  if (type === 'inlineStr') {
+    return Array.from(cell.getElementsByTagName('t'))
+      .map((node) => node.textContent)
+      .join('')
+  }
+
+  return valueNode?.textContent ?? ''
+}
+```
+
+Embedded images are extracted by reading the sheet's drawing relationships. The parser maps image blobs back to Excel row numbers and creates browser object URLs for display:
+
+```js
+const bytes = await imageFile.async('uint8array')
+const extension = target.split('.').pop()?.toLowerCase() || 'png'
+const mimeType = extension === 'jpg' ? 'image/jpeg' : `image/${extension}`
+const imageUrl = URL.createObjectURL(new Blob([bytes], { type: mimeType }))
+const excelRowNumber = Number.parseInt(row, 10) + 1
+
+imagesByRow.set(excelRowNumber, imageUrl)
+```
+
+Once rows are extracted, CSV and XLSX go through the same `buildProducts` function. This is where spreadsheet rows become app products.
+
+```js
+function buildProducts(rows, imagesByRow, fileName) {
+  const kitCount = findKitCount(rows)
+  const headerRowIndex = findHeaderRowIndex(rows)
+
+  if (headerRowIndex === -1) {
+    throw new Error('Could not find a header row with Name and Amount columns.')
+  }
+
+  const products = []
+
+  for (const row of rows.slice(headerRowIndex + 1)) {
+    const name = row.cells.A?.value?.trim() ?? ''
+    const variantOrLink = row.cells.B?.value?.trim() ?? ''
+    const sku = cleanSku(row.cells.D?.value) || cleanSku(row.cells.C?.value)
+    const pcsPerKit = toNumber(row.cells.E?.value)
+    const priceUsd = toNumber(row.cells.F?.value)
+
+    if (!name || pcsPerKit == null || priceUsd == null) continue
+
+    products.push({
+      id: `import-${row.number}-${slugify(sku || name)}`,
+      name,
+      subtitle: variant || sku || 'Imported product',
+      status: 'pending_review',
+      pcsPerKit,
+      price: convertUsdToDkk(priceUsd),
+      quoteRow: row.number,
+      sku,
+      variant,
+      supplierLink,
+      imageUrl,
+    })
+  }
+
+  if (products.length === 0) {
+    throw new Error('No product rows with name, quantity, and price were found.')
+  }
+
+  return {
+    fileName,
+    kitCount,
+    products,
+  }
+}
+```
+
+The parser expects a header row containing at least `Name` and `Amount`. It reads product name from column A, variant or link from B, SKU from C or D, quantity from E, and USD price from F. Prices are converted to DKK with a fixed demo exchange rate:
+
+```js
+const USD_TO_DKK_RATE = 6.5
+
+function convertUsdToDkk(amount) {
+  return Number((amount * USD_TO_DKK_RATE).toFixed(2))
+}
+```
+
+It also tries to find a kit count in the first few rows using text like `30 kits in total`:
+
+```js
+const KIT_COUNT_PATTERN = /(\d+)\s*kits?\s+in\s+total/i
+```
+
+The result is used differently depending on the screen. On the customer dashboard, importing a sheet replaces the review cards for that session. In make-your-own kit, importing a sheet replaces the cart with products from the file.
+
+## Help, notifications, and empty states
+
+The newer UI pieces are small but useful.
+
+`HelpTooltip` wraps a `?` icon and reveals guidance on hover or keyboard focus. It is used on metrics like components checked, components approved, total kits, progress, and pricing.
+
+`ConfirmDialog` is the modal used before destructive customer deletion. It receives labels and callbacks, so it is not tied to one feature.
+
+`UndoToast` is the recovery notification after a customer is deleted. It has one action button and one dismiss button. The timer logic is deliberately kept in the page, not in the toast, because the page owns the deleted customer state.
+
+`SortSelect` is a styled `<select>` that can be used by admin lists, product lists, and kit-builder pages. It keeps sorting controls visually consistent without hiding the actual sorting rules inside the component.
+
+## Styling
+
+The project uses Tailwind CSS 4 with theme tokens in `src/index.css`. Colors, fonts, backgrounds, and accent colors are defined there:
+
+```css
+@theme {
+  --color-background: #d7dfdc;
+  --color-background-secondary: #e7f0ed;
+  --color-background-third: #a9c6bb;
+
+  --color-text: #1f2034;
+  --color-accent-1: #9fce72;
+  --color-accent-2: #fc3154;
+
+  --font-headline: 'Bungee', cursive;
+  --font-body: 'Roboto', system-ui, sans-serif;
+}
+```
+
+Class names are composed with `cn()`, which combines `clsx` and `tailwind-merge`:
 
 ```js
 export function cn(...inputs) {
@@ -434,30 +674,26 @@ export function cn(...inputs) {
 }
 ```
 
-**`buttonClassName`** — same styles on `<button>` and `<Link>` (see `Home.jsx`) so you don’t duplicate variant maps.
+That allows conditional styles without leaving conflicting Tailwind classes behind.
 
-**`formatKr`** — Danish locale for prices:
+Buttons use a central variant map in `components/ui/buttonStyles.js`, and the same `buttonClassName` helper is also used on links that should look like buttons. That matters because React Router links and real buttons need different elements, but they should still look like the same design system.
 
-```js
-export function formatKr(amount) {
-  return `${new Intl.NumberFormat('da-DK').format(amount)}kr`
-}
-```
+## What stands out technically
 
-**`SearchFilterPanel`** — shared search + pills; pages pass `action` for their own button (create customer, add products). Filter logic stays in the page, not buried in the widget.
+The strongest part of the code is not that any one component is complicated. It is that the important behavior usually lives at the right level.
 
-## Stack
+Context owns university session state and mutations. Pages own route state, local UI state, filtering, sorting, review overlays, and cart operations. Components render props, style the interface, and emit events upward. The spreadsheet parser owns file interpretation and returns plain product data. Utility files handle formatting, class merging, progress stats, and login-code lookup.
 
-- React 19, React Router 7
-- Vite 8
-- Tailwind CSS 4
-- `clsx`, `tailwind-merge`
+The result is a prototype that is still easy to reason about. If a customer card looks wrong, check the card. If filtering is wrong, check the page helper. If imported products are wrong, check `orderSheetParser.js`. If kit progress is wrong, check the context action and `kitProgress.js`.
 
-## If you add a backend later
+## Limits of the current prototype
 
-Reasonable order of work:
+All persistence is in memory. There is no database, no API layer, and no real authentication. Admin password checking happens in the browser. University login codes are also checked in the browser. Export and submit actions still use demo alerts in places where a real app would call an API.
 
-1. Replace `src/data/*` with API calls; keep similar shapes (`getProductsByUniversity`, university + kit object).
-2. One shared store for universities (or React Query) instead of two provider mounts.
-3. Real auth for admin; keep or replace login-code links for customers.
-4. Persist reviews, cart, and “advance order” on the server instead of alerts and local state.
+Those limits are acceptable for the prototype because the component structure already points toward a backend version. The data modules can become API calls, context actions can become mutations, and the page-level filtering can either stay client-side or move server-side depending on data size.
+
+## Suggested next technical steps
+
+The natural next step is to add a backend contract for universities, products, review replies, and kit status changes. After that, the `UniversitiesProvider` could be replaced with API-backed state, probably using a query/mutation library. Admin authentication should move out of the frontend. Customer login codes could stay as secure access links or become part of a proper invite flow.
+
+For testing, the project currently relies on linting, builds, and browser checks. The best first automated tests would be focused unit tests for `orderSheetParser.js`, `kitProgress.js`, and the pure filtering/sorting helpers. Those are the places where bugs would affect real data rather than only visual layout.
