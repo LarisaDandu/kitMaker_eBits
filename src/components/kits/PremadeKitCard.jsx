@@ -28,6 +28,7 @@ function KitPart({ part }) {
           variant: 'accent',
           size: 'md',
           rounded: 'xl',
+          className: 'max-w-full whitespace-normal text-center',
         })}
       >
         See on Ebits.dk
@@ -71,7 +72,7 @@ function PremadeKitModal({ kit, onClose }) {
                       size: 'md',
                       rounded: 'xl',
                       fullWidth: true,
-                      className: 'mt-6',
+                      className: 'mt-6 whitespace-normal text-center',
                     })}
                   >
                     See on Ebits.dk
@@ -100,14 +101,14 @@ export default function PremadeKitCard({ kit, view, onAdd }) {
           <h3 className="m-0 text-xl font-bold text-text">{kit.name}</h3>
           <p className="m-0 mt-5 text-base text-text">{kit.componentCount} komponenter</p>
           <p className="m-0 mt-4 text-base text-text">{kit.price} kr/kit</p>
-          <div className="mt-5 flex gap-3">
+          <div className="mt-5 grid grid-cols-2 gap-3">
             <Button
               type="button"
               onClick={() => setShowModal(true)}
               variant="accent"
               size="sm"
               rounded="xl"
-              fullWidth
+              className="min-w-0 px-3 text-sm"
             >
               More info
             </Button>
@@ -117,7 +118,7 @@ export default function PremadeKitCard({ kit, view, onAdd }) {
               variant="accent"
               size="sm"
               rounded="xl"
-              fullWidth
+              className="min-w-0 px-3 text-sm"
             >
               Add
             </Button>
@@ -151,6 +152,7 @@ export default function PremadeKitCard({ kit, view, onAdd }) {
           variant="accent"
           size="lg"
           rounded="xl"
+          className="whitespace-normal text-center"
         >
           Add to Cart
         </Button>

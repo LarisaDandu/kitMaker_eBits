@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router'
+import TeacherAccountMenu from '../components/customer/TeacherAccountMenu'
 import KitPrice from '../components/kits/KitPrice'
 import OrderOverviewModal from '../components/kits/OrderOverviewModal'
 import PreviousOrderProductList from '../components/kits/PreviousOrderProductList'
@@ -7,14 +8,6 @@ import QuantityStepper from '../components/kits/QuantityStepper'
 import { kitMakerProducts } from '../data/kitMakerProducts'
 import { useUniversityByLoginCode } from '../hooks/useUniversityByLoginCode'
 import { formatKr } from '../lib/format'
-
-function UserIcon() {
-  return (
-    <svg width="30" height="30" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path d="M20 21a8 8 0 0 0-16 0M12 13a5 5 0 1 0 0-10 5 5 0 0 0 0 10Z" fill="currentColor" />
-    </svg>
-  )
-}
 
 export default function ReorderPage() {
   const { loginCode, orderId } = useParams()
@@ -48,10 +41,7 @@ export default function ReorderPage() {
       <div className="box-border flex flex-col gap-8 px-8 py-10 max-sm:px-4">
         <header className="flex items-center justify-between gap-4">
           <h1 className="m-0 font-headline text-4xl uppercase">Reorder</h1>
-          <div className="flex items-center gap-3 text-base">
-            <span>{university.name}</span>
-            <UserIcon />
-          </div>
+          <TeacherAccountMenu university={university} />
         </header>
 
         <div className="grid gap-6 lg:grid-cols-[1fr_420px]">

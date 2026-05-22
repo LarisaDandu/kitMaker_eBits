@@ -42,7 +42,7 @@ function Details({ product }) {
           variant: 'accent',
           size: 'md',
           rounded: 'xl',
-          className: 'mt-6',
+          className: 'mt-6 max-w-full whitespace-normal text-center',
         })}
       >
         See on Ebits.dk
@@ -84,14 +84,14 @@ export default function KitMakerProductCard({ product, view, onAdd }) {
           <span className="mt-5 inline-flex rounded-full border border-text-secondary bg-background-third px-3 py-1.5 text-sm font-medium text-text">
             pcs/kit: {quantity}
           </span>
-          <div className="mt-4 flex gap-3">
+          <div className="mt-4 grid grid-cols-2 gap-3">
             <Button
               type="button"
               onClick={() => setExpanded((value) => !value)}
               variant="accent"
               size="sm"
               rounded="xl"
-              fullWidth
+              className="min-w-0 px-3 text-sm"
             >
               More info
             </Button>
@@ -101,7 +101,7 @@ export default function KitMakerProductCard({ product, view, onAdd }) {
               variant="accent"
               size="sm"
               rounded="xl"
-              fullWidth
+              className="min-w-0 px-3 text-sm"
             >
               Add
             </Button>
@@ -146,6 +146,7 @@ export default function KitMakerProductCard({ product, view, onAdd }) {
           variant="accent"
           size="lg"
           rounded="xl"
+          className="whitespace-normal text-center"
         >
           Add to Cart
         </Button>

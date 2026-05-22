@@ -1,7 +1,7 @@
 import PremadeKitCard from './PremadeKitCard'
 import { cn } from '../../lib/cn'
 
-function ViewButton({ active, children, onClick }) {
+function ViewButton({ active, children, onClick, label }) {
   return (
     <button
       type="button"
@@ -10,6 +10,7 @@ function ViewButton({ active, children, onClick }) {
         'flex size-10 cursor-pointer items-center justify-center rounded-md border border-text bg-transparent text-text',
         active && 'bg-text text-accent-1',
       )}
+      aria-label={label}
       aria-pressed={active}
     >
       {children}
@@ -27,15 +28,28 @@ export default function PremadeKitList({
   return (
     <section className="rounded-[20px] bg-background-secondary px-7 py-7">
       <div className="flex justify-end gap-2">
-        <ViewButton active={view === 'list'} onClick={() => onViewChange('list')}>
-          ☰
+        <ViewButton
+          active={view === 'list'}
+          onClick={() => onViewChange('list')}
+          label="Show list view"
+        >
+          =
         </ViewButton>
-        <ViewButton active={view === 'grid'} onClick={() => onViewChange('grid')}>
-          ▦
+        <ViewButton
+          active={view === 'grid'}
+          onClick={() => onViewChange('grid')}
+          label="Show card view"
+        >
+          #
         </ViewButton>
       </div>
 
-      <div className={cn('mt-5', view === 'grid' && kits.length > 0 && 'grid gap-6 md:grid-cols-2 xl:grid-cols-3')}>
+      <div
+        className={cn(
+          'mt-5',
+          view === 'grid' && kits.length > 0 && 'grid gap-6 md:grid-cols-2 xl:grid-cols-3',
+        )}
+      >
         {kits.length === 0 ? (
           <p className="m-0 py-8 text-center text-sm font-medium text-text-secondary">
             {emptyMessage}

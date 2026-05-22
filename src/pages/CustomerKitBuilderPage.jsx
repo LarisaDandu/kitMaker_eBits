@@ -1,18 +1,8 @@
 import { useNavigate, useParams } from 'react-router'
+import TeacherAccountMenu from '../components/customer/TeacherAccountMenu'
 import KitBuilderChoiceCard from '../components/kits/KitBuilderChoiceCard'
 import KitBuilderRequestForm from '../components/kits/KitBuilderRequestForm'
 import { useUniversityByLoginCode } from '../hooks/useUniversityByLoginCode'
-
-function UserIcon() {
-  return (
-    <svg width="30" height="30" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path
-        d="M20 21a8 8 0 0 0-16 0M12 13a5 5 0 1 0 0-10 5 5 0 0 0 0 10Z"
-        fill="currentColor"
-      />
-    </svg>
-  )
-}
 
 export default function CustomerKitBuilderPage() {
   const { loginCode } = useParams()
@@ -37,10 +27,7 @@ export default function CustomerKitBuilderPage() {
           <h1 className="m-0 font-headline text-4xl uppercase leading-tight max-sm:text-3xl">
             Welcome to eBits Kit Maker
           </h1>
-          <div className="flex items-center gap-3 text-base max-sm:hidden">
-            <span>{university.name}</span>
-            <UserIcon />
-          </div>
+          <TeacherAccountMenu university={university} className="max-sm:hidden" />
         </header>
 
         <div className="mt-36 grid gap-28 lg:grid-cols-2 max-lg:mt-16 max-lg:gap-8">

@@ -18,6 +18,7 @@ export default function LoginForm() {
   const navigate = useNavigate()
 
   const isAdmin = mode === LOGIN_MODES.ADMIN
+  const hasPassword = password.trim().length > 0
   const title = isAdmin
     ? 'Enter the admin password to continue'
     : "Enter the school's unique code to continue"
@@ -101,7 +102,12 @@ export default function LoginForm() {
             type="submit"
             fullWidth
             rounded="md"
-            className="mt-20 h-16 rounded-[20px] border border-accent-1 bg-[#737783] text-3xl font-normal text-accent-1-lighter hover:bg-[#666a76] max-sm:mt-12 max-sm:text-2xl"
+            className={cn(
+              'mt-20 h-16 rounded-[20px] border border-accent-1 text-3xl font-normal text-accent-1-lighter max-sm:mt-12 max-sm:text-2xl',
+              hasPassword
+                ? 'bg-[#1f2034] hover:bg-[#171827]'
+                : 'bg-[#737783] hover:bg-[#666a76]',
+            )}
           >
             Login
           </Button>
