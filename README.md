@@ -107,7 +107,7 @@ const filteredUniversities = useMemo(
 )
 ```
 
-This keeps the components reusable. `SearchFilterPanel`, `SortSelect`, `FilterPill`, `ConfirmDialog`, `UndoToast`, and `HelpTooltip` are shared UI pieces. They are styled and accessible enough to use in different contexts, but they avoid knowing the app's domain model.
+This keeps the components reusable without putting domain logic inside them. `SearchFilterPanel`, `SortSelect`, `FilterPill`, `ConfirmDialog`, `UndoToast`, and `HelpTooltip` are shared UI pieces. They handle markup, styling, and small interaction details, while pages decide what the data means.
 
 ## Data and state
 
@@ -176,7 +176,7 @@ const removeUniversity = useCallback((id) => {
 }, [])
 ```
 
-This is a clean example of separating "hide this from the user now" from "remove this from state completely". In a backend version, those would likely become different API operations or one delete operation with a recoverable status.
+So deletion has two stages in the prototype: hide the customer first, then remove it after the undo window has passed. In a backend version, this could become either a recoverable delete status or a normal delete endpoint with an undo strategy on top.
 
 ## Login and routing
 
@@ -198,7 +198,7 @@ export function useUniversityByLoginCode(loginCode) {
 }
 ```
 
-This is simple, but it is also the main link between the route and the data model. A wrong login code gives the customer an "Order not found" style screen instead of crashing.
+This hook is the bridge between the route and the data model. A wrong login code gives the customer an "Order not found" style screen instead of crashing.
 
 The teacher account menu is another small routing feature. It lives close to the school name on teacher pages and links back to the right places using the current `loginCode`: sign out goes to `/`, dashboard goes to `/orders/:loginCode/dashboard`, and orders goes to `/orders/:loginCode`.
 
@@ -238,9 +238,9 @@ function filterUniversities(list, searchQuery, statusFilter, sortValue) {
 }
 ```
 
-There is no hidden search library. The code normalizes the query, checks a few known fields, then sorts the result. This is easy to expand later if new searchable fields are added.
+There is no search library involved. The code normalizes the query, checks the fields that matter for this screen, then sorts the result.
 
-Delete is handled in a more careful way than a native `window.confirm`. The page stores the pending customer, opens `ConfirmDialog`, soft-deletes after confirmation, then shows `UndoToast`.
+Delete no longer uses a native `window.confirm`. The page stores the pending customer, opens `ConfirmDialog`, soft-deletes after confirmation, then shows `UndoToast`.
 
 ```js
 function handleConfirmDelete() {
@@ -311,7 +311,7 @@ const advanceKitOrder = useCallback((id) => {
 }, [])
 ```
 
-The interesting part is that the UI does not store a separate "current step" state. `KitProgress` derives each node from the number:
+The UI does not store a separate "current step" state. `KitProgress` derives each node from the number:
 
 ```jsx
 {KIT_PROGRESS_STEPS.map((label, index) => {
@@ -331,7 +331,7 @@ The interesting part is that the UI does not store a separate "current step" sta
 })}
 ```
 
-This makes the timeline predictable. If the progress number changes, the visual state follows.
+If the progress number changes, the visual state follows from that number.
 
 ## Product review dashboard
 
@@ -386,7 +386,7 @@ export function useDebouncedValue(value, delay = 250) {
 }
 ```
 
-This is enough to support a visible "Searching..." state without bringing in extra dependencies.
+That small delay is what lets the UI show "Searching..." before replacing the visible results.
 
 ## Kit builder
 
@@ -637,15 +637,13 @@ The result is used differently depending on the screen. On the customer dashboar
 
 ## Help, notifications, and empty states
 
-The newer UI pieces are small but useful.
-
 `HelpTooltip` wraps a `?` icon and reveals guidance on hover or keyboard focus. It is used on metrics like components checked, components approved, total kits, progress, and pricing.
 
 `ConfirmDialog` is the modal used before destructive customer deletion. It receives labels and callbacks, so it is not tied to one feature.
 
-`UndoToast` is the recovery notification after a customer is deleted. It has one action button and one dismiss button. The timer logic is deliberately kept in the page, not in the toast, because the page owns the deleted customer state.
+`UndoToast` is the recovery notification after a customer is deleted. It has one action button and one dismiss button. The timer logic stays in the page, not in the toast, because the page owns the deleted customer state.
 
-`SortSelect` is a styled `<select>` that can be used by admin lists, product lists, and kit-builder pages. It keeps sorting controls visually consistent without hiding the actual sorting rules inside the component.
+`SortSelect` is a styled `<select>` used by admin lists, product lists, and kit-builder pages. The sorting rules still live in the page that owns the data.
 
 ## Styling
 
@@ -674,26 +672,26 @@ export function cn(...inputs) {
 }
 ```
 
-That allows conditional styles without leaving conflicting Tailwind classes behind.
+That allows conditional styles while letting `tailwind-merge` resolve duplicate Tailwind classes.
 
-Buttons use a central variant map in `components/ui/buttonStyles.js`, and the same `buttonClassName` helper is also used on links that should look like buttons. That matters because React Router links and real buttons need different elements, but they should still look like the same design system.
+Buttons use a central variant map in `components/ui/buttonStyles.js`. The same `buttonClassName` helper is also used on links that need button styling, since React Router links and real buttons are different elements.
 
-## What stands out technically
+## Implementation notes
 
-The strongest part of the code is not that any one component is complicated. It is that the important behavior usually lives at the right level.
+Most of the code is straightforward. The important part is where each kind of behavior lives.
 
 Context owns university session state and mutations. Pages own route state, local UI state, filtering, sorting, review overlays, and cart operations. Components render props, style the interface, and emit events upward. The spreadsheet parser owns file interpretation and returns plain product data. Utility files handle formatting, class merging, progress stats, and login-code lookup.
 
-The result is a prototype that is still easy to reason about. If a customer card looks wrong, check the card. If filtering is wrong, check the page helper. If imported products are wrong, check `orderSheetParser.js`. If kit progress is wrong, check the context action and `kitProgress.js`.
+That makes the code easier to trace. If a customer card looks wrong, check the card. If filtering is wrong, check the page helper. If imported products are wrong, check `orderSheetParser.js`. If kit progress is wrong, check the context action and `kitProgress.js`.
 
 ## Limits of the current prototype
 
 All persistence is in memory. There is no database, no API layer, and no real authentication. Admin password checking happens in the browser. University login codes are also checked in the browser. Export and submit actions still use demo alerts in places where a real app would call an API.
 
-Those limits are acceptable for the prototype because the component structure already points toward a backend version. The data modules can become API calls, context actions can become mutations, and the page-level filtering can either stay client-side or move server-side depending on data size.
+Those limits are part of the prototype. The data modules can later become API calls, context actions can become mutations, and the page-level filtering can either stay client-side or move server-side depending on data size.
 
 ## Suggested next technical steps
 
-The natural next step is to add a backend contract for universities, products, review replies, and kit status changes. After that, the `UniversitiesProvider` could be replaced with API-backed state, probably using a query/mutation library. Admin authentication should move out of the frontend. Customer login codes could stay as secure access links or become part of a proper invite flow.
+The next step would be to define a backend contract for universities, products, review replies, and kit status changes. After that, the `UniversitiesProvider` could be replaced with API-backed state, probably using a query/mutation library. Admin authentication should move out of the frontend. Customer login codes could stay as access links or become part of an invite flow.
 
-For testing, the project currently relies on linting, builds, and browser checks. The best first automated tests would be focused unit tests for `orderSheetParser.js`, `kitProgress.js`, and the pure filtering/sorting helpers. Those are the places where bugs would affect real data rather than only visual layout.
+For testing, the project currently relies on linting, builds, and browser checks. The first automated tests should cover `orderSheetParser.js`, `kitProgress.js`, and the pure filtering/sorting helpers, because those are the places where bugs would affect data rather than only layout.
