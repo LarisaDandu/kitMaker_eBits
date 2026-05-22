@@ -2,7 +2,7 @@
 
 This project is a React and Vite prototype for the eBits kit ordering workflow. It covers two main user groups: eBits staff, who manage university customers and kit progress, and university contacts, who review orders or build new kits from a catalog.
 
-There is no backend in this version. The app uses static seed data from `src/data/`, then keeps changes in React state for the current browser session. That means customer creation, editing, soft deletion, kit progress, product review choices, cart contents, imported spreadsheets, and undo notifications all work in the UI, but they reset when the app reloads.
+There is no backend in this version. The app uses static seed data from `src/data/`, then keeps changes in React state for the current browser session. That means customer creation, editing, soft deletion, kit progress, product review choices, cart contents, imported spreadsheets, and undo notifications all work in the UI, but they reset when the app reloads. The reason why this approach was chosen was because eBits has it's own implementation pipeline to dedicated servers and there was no need to make the eBits API and logistics public.
 
 ## Running the project
 
@@ -64,9 +64,9 @@ function OrdersLayout() {
 </Route>
 ```
 
-Most files in `src/components/` are intentionally simple. They are close to glorified widgets: styled building blocks that receive data through props, render it, and call callbacks when the user interacts with them. They do not own the main business rules. A card component may show a delete button, but the decision about what deletion means lives higher up in a page or in context. A product list may render filtered products, but the filter logic belongs to the page.
+Most files in `src/components/` are intentionally simple. They are close to glorified widgets: styled building blocks that receive data through props, render it, and call callbacks when the user interacts with them. A card component may show a delete button, but the decision about what deletion means coresponds to another page or context. A product list may render filtered products, but the filter logic is calculated in the page.
 
-That split is visible in the admin customer list. `UniversityList` renders whatever universities it receives. It does not know how search works, how sorting works, or how deletion is implemented.
+That split is visible in the admin customer list. `UniversityList` renders the universities it receives. It does not have access to how search, sorting or deletion is implemented.
 
 ```jsx
 export default function UniversityList({
@@ -198,9 +198,9 @@ export function useUniversityByLoginCode(loginCode) {
 }
 ```
 
-This hook is the bridge between the route and the data model. A wrong login code gives the customer an "Order not found" style screen instead of crashing.
+This hook is the bridge between the route and the data model. A wrong login code gives the customer an "Order not found" screen instead of returning an empty page.
 
-The teacher account menu is another small routing feature. It lives close to the school name on teacher pages and links back to the right places using the current `loginCode`: sign out goes to `/`, dashboard goes to `/orders/:loginCode/dashboard`, and orders goes to `/orders/:loginCode`.
+The teacher account menu is another small routing feature. It inks back to the right pages using the current `loginCode`: sign out goes to `/`, dashboard goes to `/orders/:loginCode/dashboard`, and orders goes to `/orders/:loginCode`.
 
 ## Admin workflow
 
@@ -270,7 +270,7 @@ The customer detail page shows the same idea from a different route. If a custom
 
 ## Kit progress
 
-Kit progress is controlled by one number: `progressStep`. The labels live in `src/data/kits.js`, and the stats for each step are generated in `src/lib/kitProgress.js`.
+Kit progress is controlled by one number: `progressStep`. The labels are found in `src/data/kits.js`, and the stats for each step are generated in `src/lib/kitProgress.js`.
 
 When staff click "Advance order", context updates only the matching university:
 
@@ -678,17 +678,16 @@ Buttons use a central variant map in `components/ui/buttonStyles.js`. The same `
 
 ## Implementation notes
 
-Most of the code is straightforward. The important part is where each kind of behavior lives.
+Most of the code is straightforward. The important part is where each kind of behavior is compartmentalised.
 
-Context owns university session state and mutations. Pages own route state, local UI state, filtering, sorting, review overlays, and cart operations. Components render props, style the interface, and emit events upward. The spreadsheet parser owns file interpretation and returns plain product data. Utility files handle formatting, class merging, progress stats, and login-code lookup.
+Context has university session state and mutations. Pages has route state, local UI state, filtering, sorting, review overlays, and cart operations. Components render props, style the interface, and emit events upward. The spreadsheet parser has file interpretation and returns plain product data. Utility files handle formatting, class merging, progress stats, and login-code lookup.
 
 That makes the code easier to trace. If a customer card looks wrong, check the card. If filtering is wrong, check the page helper. If imported products are wrong, check `orderSheetParser.js`. If kit progress is wrong, check the context action and `kitProgress.js`.
 
 ## Limits of the current prototype
 
-All persistence is in memory. There is no database, no API layer, and no real authentication. Admin password checking happens in the browser. University login codes are also checked in the browser. Export and submit actions still use demo alerts in places where a real app would call an API.
+All persistence is in memory. Admin password checking happens in the browser. University login codes are also checked in the browser. Export and submit actions still use demo alerts in places where a real app would call an API. Once again this was done to protect eBits intelectual property as well as allow their own implementation into their own custom business OS.
 
-Those limits are part of the prototype. The data modules can later become API calls, context actions can become mutations, and the page-level filtering can either stay client-side or move server-side depending on data size.
 
 ## Suggested next technical steps
 
