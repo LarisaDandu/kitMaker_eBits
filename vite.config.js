@@ -8,7 +8,7 @@ const root = fileURLToPath(new URL('.', import.meta.url))
 // https://vite.dev/config/
 export default defineConfig({
   root,
-  base: '/eBits_kitMaker/',
+  base: '/kitMaker_eBits/',
   plugins: [react(), tailwindcss()],
   build: {
     rollupOptions: {
