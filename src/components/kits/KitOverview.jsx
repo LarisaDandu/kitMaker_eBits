@@ -22,27 +22,28 @@ export default function KitOverview({ university, onExportCsv }) {
   const { kit, status } = university
   const { stats } = kit
   const kitStatusLabel = KIT_STATUS_LABELS[status] ?? status
+  const requiresChanges = status === UNIVERSITY_STATUS.REQUIRES_CHANGES
 
   const statItems = [
     {
       label: 'Components checked',
       value: `${stats.checked}/${stats.totalComponents}`,
-      help: 'How many components have been reviewed in this kit.',
+      help: 'Components reviewed so far.',
     },
     {
       label: 'Components approved',
       value: `${stats.approved}/${stats.totalComponents}`,
-      help: 'Components approved for the current kit quote.',
+      help: 'Components accepted for this quote.',
     },
     {
       label: 'Components required',
       value: `${stats.required ?? 0}/${stats.totalComponents}`,
-      help: 'Components still requiring changes or follow-up.',
+      help: 'Components needing changes or follow-up.',
     },
     {
       label: 'Total number of kits',
       value: String(stats.totalKits),
-      help: 'The requested production quantity for this school.',
+      help: 'Complete kits requested by the school.',
     },
   ]
 
@@ -54,15 +55,23 @@ export default function KitOverview({ university, onExportCsv }) {
             'rounded-full px-3 py-1.5 text-sm font-medium',
             status === UNIVERSITY_STATUS.ACTIVE_ORDER
               ? 'bg-accent-1-lighter text-text'
-              : status === UNIVERSITY_STATUS.REQUIRES_CHANGES
+              : requiresChanges
                 ? 'bg-accent-2-lighter text-text'
                 : 'bg-background-third text-text-secondary',
           )}
         >
           {kitStatusLabel}
         </span>
-        <span className="rounded-full bg-background-third px-3 py-1.5 text-sm font-medium text-text-secondary">
-          Quota: {stats.totalKits}
+        <span
+          className={cn(
+            'rounded-full border px-3 py-1.5 text-sm font-medium text-text',
+            requiresChanges
+              ? 'border-accent-2 bg-accent-2-lighter'
+              : 'border-text bg-background-third',
+          )}
+        >
+          Quote {kit.quoteId}
+          {requiresChanges ? ' - Requires Changes' : ''}
         </span>
       </div>
 
@@ -72,7 +81,12 @@ export default function KitOverview({ university, onExportCsv }) {
 
       <div className="mb-5 flex flex-wrap gap-2">
         {statItems.map((item) => (
-          <StatBox key={item.label} label={item.label} value={item.value} />
+          <StatBox
+            key={item.label}
+            label={item.label}
+            value={item.value}
+            help={item.help}
+          />
         ))}
       </div>
 

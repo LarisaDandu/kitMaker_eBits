@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { cn } from '../../lib/cn'
+import ViewModeToggle from './ViewModeToggle'
 
 function ExternalIcon() {
   return (
@@ -15,23 +16,6 @@ function SearchIcon() {
       <circle cx="11" cy="11" r="7" stroke="currentColor" strokeWidth="2" />
       <path d="M20 20l-4-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
     </svg>
-  )
-}
-
-function ViewButton({ active, children, onClick, label }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={cn(
-        'flex size-10 cursor-pointer items-center justify-center rounded-md border border-text bg-transparent text-text',
-        active && 'bg-text text-accent-1',
-      )}
-      aria-label={label}
-      aria-pressed={active}
-    >
-      {children}
-    </button>
   )
 }
 
@@ -166,13 +150,8 @@ export default function PreviousOrderProductList({ products, showModify, onModif
         </div>
       </div>
 
-      <div className="mt-8 flex justify-end gap-2">
-        <ViewButton active={view === 'list'} onClick={() => setView('list')} label="Show list view">
-          =
-        </ViewButton>
-        <ViewButton active={view === 'grid'} onClick={() => setView('grid')} label="Show card view">
-          #
-        </ViewButton>
+      <div className="mt-8">
+        <ViewModeToggle view={view} onViewChange={setView} />
       </div>
 
       <div className={cn('mt-8', view === 'grid' && 'grid gap-6 md:grid-cols-2 xl:grid-cols-3')}>

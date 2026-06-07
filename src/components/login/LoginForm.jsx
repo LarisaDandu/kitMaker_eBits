@@ -2,7 +2,7 @@ import { useId, useState } from 'react'
 import { useNavigate } from 'react-router'
 import Button from '../ui/Button'
 import FormInput from '../ui/FormInput'
-import { universities } from '../../data/universities'
+import { useUniversities } from '../../hooks/useUniversities'
 import { cn } from '../../lib/cn'
 
 const LOGIN_MODES = {
@@ -16,9 +16,10 @@ export default function LoginForm() {
   const [error, setError] = useState('')
   const inputId = useId()
   const navigate = useNavigate()
+  const { universities, isLoading, error: loadError } = useUniversities()
 
   const isAdmin = mode === LOGIN_MODES.ADMIN
-  const hasPassword = password.trim().length > 0
+  const hasPassword = password.trim().length > 0 && !isLoading
   const title = isAdmin
     ? 'Enter the admin password to continue'
     : "Enter the school's unique code to continue"
@@ -55,7 +56,7 @@ export default function LoginForm() {
       return
     }
 
-    setError('No school matches that code.')
+    setError(loadError || 'No school matches that code.')
   }
 
   return (
@@ -108,8 +109,9 @@ export default function LoginForm() {
                 ? 'bg-[#1f2034] hover:bg-[#171827]'
                 : 'bg-[#737783] hover:bg-[#666a76]',
             )}
+            disabled={isLoading}
           >
-            Login
+            {isLoading ? 'Loading...' : 'Login'}
           </Button>
         </div>
       </div>

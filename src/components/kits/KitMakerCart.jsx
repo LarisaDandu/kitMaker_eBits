@@ -2,6 +2,7 @@ import { useState } from 'react'
 import QuantityStepper from './QuantityStepper'
 import Button from '../ui/Button'
 import { formatKr } from '../../lib/format'
+import { downloadCsv } from '../../lib/csvExport'
 
 function CartIcon() {
   return (
@@ -25,7 +26,7 @@ export default function KitMakerCart({
   const total = items.reduce((sum, item) => sum + item.price * item.quantity * kitCount, 0)
 
   return (
-    <aside className="sticky top-6 rounded-[20px] border border-accent-2 bg-background px-6 py-7 shadow-md">
+    <aside className="self-start rounded-[20px] border border-accent-2 bg-background px-6 py-7 shadow-md">
       <div className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-3 text-2xl text-text">
           <CartIcon />
@@ -94,9 +95,8 @@ export default function KitMakerCart({
                   />
                   <span>{formatKr(item.price * item.quantity)}</span>
                 </div>
-                {item.sku || item.variant || item.supplierLink ? (
+                {item.variant || item.supplierLink ? (
                   <div className="mt-3 flex flex-wrap gap-2 text-xs text-text-secondary">
-                    {item.sku ? <span>SKU: {item.sku}</span> : null}
                     {item.variant ? <span>{item.variant}</span> : null}
                     {item.sourceCurrency === 'USD' && item.sourcePrice != null ? (
                       <span>${item.sourcePrice.toFixed(2)} × 6.5</span>
@@ -122,7 +122,26 @@ export default function KitMakerCart({
       <p className="m-0 mt-7 text-xl font-bold text-text">
         Estimated Cost: {items.length ? formatKr(total) : '--- kr'}
       </p>
-      <Button type="button" variant="outline" size="md" rounded="xl" className="mt-4">
+      <Button
+        type="button"
+        onClick={() =>
+          downloadCsv(
+            `${kitName || 'kit-cart'}.csv`,
+            items.map((item) => ({
+              kitName: kitName || 'Untitled kit',
+              kitCount,
+              itemName: item.name,
+              quantity: item.quantity,
+              price: item.price,
+              total: item.price * item.quantity * kitCount,
+            })),
+          )
+        }
+        variant="outline"
+        size="md"
+        rounded="xl"
+        className="mt-4"
+      >
         Export CSV
       </Button>
       <Button

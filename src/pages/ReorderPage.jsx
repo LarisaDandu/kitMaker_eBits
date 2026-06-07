@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router'
+import TeacherBackButton from '../components/customer/TeacherBackButton'
 import TeacherAccountMenu from '../components/customer/TeacherAccountMenu'
 import KitPrice from '../components/kits/KitPrice'
 import OrderOverviewModal from '../components/kits/OrderOverviewModal'
@@ -8,6 +9,7 @@ import QuantityStepper from '../components/kits/QuantityStepper'
 import { kitMakerProducts } from '../data/kitMakerProducts'
 import { useUniversityByLoginCode } from '../hooks/useUniversityByLoginCode'
 import { useUniversities } from '../hooks/useUniversities'
+import { exportOrderCsv } from '../lib/csvExport'
 
 export default function ReorderPage() {
   const { loginCode, orderId } = useParams()
@@ -40,6 +42,12 @@ export default function ReorderPage() {
   return (
     <main className="min-h-svh bg-background font-body text-text">
       <div className="box-border flex flex-col gap-8 px-8 py-10 max-sm:px-4">
+        <TeacherBackButton
+          to={`/orders/${university.loginCode}/previous/${order.id}`}
+          className="w-fit"
+        >
+          Back to previous order
+        </TeacherBackButton>
         <header className="flex items-center justify-between gap-4">
           <h1 className="m-0 font-headline text-4xl uppercase">Reorder</h1>
           <TeacherAccountMenu university={university} />
@@ -76,7 +84,17 @@ export default function ReorderPage() {
               <span className="block text-base text-text">Total number of kits</span>
               <span className="mt-12 block text-4xl text-text">{kitQuantity}</span>
             </div>
-            <button type="button" className="mt-8 rounded-xl border border-accent-2 bg-transparent px-7 py-3 text-text">
+            <button
+              type="button"
+              onClick={() =>
+                exportOrderCsv(
+                  university,
+                  { ...order, name: kitName || order.name },
+                  [{ ...baseItem, pcsPerKit: baseItem.quantity }],
+                )
+              }
+              className="mt-8 rounded-xl border border-accent-2 bg-transparent px-7 py-3 text-text"
+            >
               Export CSV
             </button>
           </section>
@@ -113,8 +131,8 @@ export default function ReorderPage() {
         <OrderOverviewModal
           order={pendingOrder}
           onCancel={() => setPendingOrder(null)}
-          onConfirm={() => {
-            createActiveOrder(university.id, pendingOrder)
+          onConfirm={async () => {
+            await createActiveOrder(university.id, pendingOrder)
             setPendingOrder(null)
             navigate(`/orders/${university.loginCode}`)
           }}

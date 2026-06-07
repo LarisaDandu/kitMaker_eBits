@@ -1,18 +1,17 @@
-import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router'
+import TeacherBackButton from '../components/customer/TeacherBackButton'
 import TeacherAccountMenu from '../components/customer/TeacherAccountMenu'
 import CustomerOrderCard from '../components/kits/CustomerOrderCard'
-import PrototypeAccessModal from '../components/kits/PrototypeAccessModal'
 import Button from '../components/ui/Button'
 import { UNIVERSITY_STATUS } from '../data/universities'
 import { useUniversityByLoginCode } from '../hooks/useUniversityByLoginCode'
 import { cn } from '../lib/cn'
+import { exportOrderCsv } from '../lib/csvExport'
 import { getActiveOrders } from '../lib/universityUtils'
 
 export default function CustomerOrdersPage() {
   const { loginCode } = useParams()
   const navigate = useNavigate()
-  const [showPrototypeModal, setShowPrototypeModal] = useState(false)
   const university = useUniversityByLoginCode(loginCode)
   const activeOrders = getActiveOrders(university)
 
@@ -30,6 +29,9 @@ export default function CustomerOrdersPage() {
   return (
     <main className="min-h-svh bg-background font-body text-text">
       <div className="box-border w-full px-8 py-10 max-sm:px-4 max-sm:py-6">
+        <TeacherBackButton to="/" className="mb-8">
+          Back
+        </TeacherBackButton>
         <header className="flex items-start justify-between gap-6">
           <div>
             <h1 className="m-0 font-headline text-4xl uppercase leading-tight">
@@ -37,7 +39,7 @@ export default function CustomerOrdersPage() {
             </h1>
             <Button
               type="button"
-              onClick={() => setShowPrototypeModal(true)}
+              onClick={() => navigate(`/orders/${university.loginCode}/kit-builder`)}
               variant="accent"
               size="md"
               rounded="xl"
@@ -61,7 +63,7 @@ export default function CustomerOrdersPage() {
               status={order.status ?? UNIVERSITY_STATUS.ACTIVE_ORDER}
               isActive
               variant="compact"
-              onExportCsv={() => window.alert('Export CSV (demo)')}
+              onExportCsv={() => exportOrderCsv(university, order, order.products ?? [])}
               dashboardHref={`/orders/${university.loginCode}/dashboard/${order.id}`}
             />
           ))}
@@ -72,22 +74,12 @@ export default function CustomerOrdersPage() {
               order={order}
               status={order.status}
               variant="compact"
-              onExportCsv={() => window.alert('Export previous order CSV (demo)')}
+              onExportCsv={() => exportOrderCsv(university, order, order.products ?? [])}
               detailHref={`/orders/${university.loginCode}/previous/${order.id}`}
             />
           ))}
         </div>
       </div>
-
-      {showPrototypeModal ? (
-        <PrototypeAccessModal
-          onCancel={() => setShowPrototypeModal(false)}
-          onContinue={() => {
-            setShowPrototypeModal(false)
-            navigate(`/orders/${university.loginCode}/kit-builder`)
-          }}
-        />
-      ) : null}
     </main>
   )
 }

@@ -1,9 +1,11 @@
 import { useNavigate, useParams } from 'react-router'
+import TeacherBackButton from '../components/customer/TeacherBackButton'
 import TeacherAccountMenu from '../components/customer/TeacherAccountMenu'
 import KitBuilderChoiceCard from '../components/kits/KitBuilderChoiceCard'
 import KitBuilderRequestForm from '../components/kits/KitBuilderRequestForm'
 import { useUniversityByLoginCode } from '../hooks/useUniversityByLoginCode'
 import { useUniversities } from '../hooks/useUniversities'
+import { downloadProductTemplateCsv } from '../lib/productTemplateCsv'
 
 export default function CustomerKitBuilderPage() {
   const { loginCode } = useParams()
@@ -25,6 +27,9 @@ export default function CustomerKitBuilderPage() {
   return (
     <main className="min-h-svh bg-background font-body text-text">
       <div className="box-border flex min-h-svh flex-col px-8 py-10 max-sm:px-4">
+        <TeacherBackButton to={`/orders/${university.loginCode}`} className="mb-8 w-fit">
+          Back to orders
+        </TeacherBackButton>
         <header className="flex items-center justify-between gap-4">
           <h1 className="m-0 font-headline text-4xl uppercase leading-tight max-sm:text-3xl">
             Welcome to eBits Kit Maker
@@ -45,8 +50,11 @@ export default function CustomerKitBuilderPage() {
 
         <div className="mt-36 max-lg:mt-16">
           <KitBuilderRequestForm
-            onSubmit={({ request, fileName }) => {
-              createActiveOrder(university.id, {
+            onDownloadTemplate={() =>
+              downloadProductTemplateCsv({ filename: 'special-request-template' })
+            }
+            onSubmit={async ({ request, fileName }) => {
+              await createActiveOrder(university.id, {
                 kitName: fileName || 'Special request kit',
                 notes: request,
                 kitCount: 1,

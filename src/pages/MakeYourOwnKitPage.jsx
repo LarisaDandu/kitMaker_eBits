@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router'
 import FilterPill from '../components/admin/FilterPill'
+import TeacherBackButton from '../components/customer/TeacherBackButton'
 import TeacherAccountMenu from '../components/customer/TeacherAccountMenu'
 import KitBuilderRequestForm from '../components/kits/KitBuilderRequestForm'
 import KitMakerCart from '../components/kits/KitMakerCart'
@@ -9,10 +10,11 @@ import KitMakerProductList from '../components/kits/KitMakerProductList'
 import OrderOverviewModal from '../components/kits/OrderOverviewModal'
 import ProductImportPanel from '../components/products/ProductImportPanel'
 import SortSelect from '../components/ui/SortSelect'
-import { kitMakerProducts } from '../data/kitMakerProducts'
 import { useDebouncedValue } from '../hooks/useDebouncedValue'
+import { useKitCatalogProducts } from '../hooks/useKitCatalogProducts'
 import { useUniversityByLoginCode } from '../hooks/useUniversityByLoginCode'
 import { useUniversities } from '../hooks/useUniversities'
+import { downloadProductTemplateCsv } from '../lib/productTemplateCsv'
 
 const SORT_OPTIONS = [
   { id: 'name', label: 'Name' },
@@ -41,6 +43,7 @@ export default function MakeYourOwnKitPage() {
 
   const university = useUniversityByLoginCode(loginCode)
   const { createActiveOrder } = useUniversities()
+  const { products: kitMakerProducts } = useKitCatalogProducts()
 
   const filteredProducts = useMemo(() => {
     const normalizedQuery = debouncedQuery.trim().toLowerCase()
@@ -64,7 +67,7 @@ export default function MakeYourOwnKitPage() {
       if (sortValue === 'priceHigh') return b.price - a.price
       return a.name.localeCompare(b.name)
     })
-  }, [activeCategory, debouncedQuery, priceFilter, sortValue])
+  }, [activeCategory, debouncedQuery, kitMakerProducts, priceFilter, sortValue])
 
   if (!university) {
     return (
@@ -134,6 +137,9 @@ export default function MakeYourOwnKitPage() {
     <main className="min-h-svh bg-background font-body text-text">
       <div className="box-border grid gap-9 px-8 py-10 lg:grid-cols-[1fr_360px] max-sm:px-4">
         <div>
+          <TeacherBackButton to={`/orders/${university.loginCode}/kit-builder`} className="mb-8">
+            Back
+          </TeacherBackButton>
           <header className="flex items-start justify-between gap-4">
             <div>
               <h1 className="m-0 font-headline text-3xl uppercase leading-tight">
@@ -156,6 +162,9 @@ export default function MakeYourOwnKitPage() {
               importSummary={importSummary}
               onImport={handleImport}
               onReset={handleResetImport}
+              onDownloadTemplate={() =>
+                downloadProductTemplateCsv({ filename: 'kit-components-template' })
+              }
             />
           </div>
 
@@ -213,6 +222,9 @@ export default function MakeYourOwnKitPage() {
               title="Can't find what you are looking for?"
               description="Write your desired components down below"
               submitLabel="Add to cart"
+              onDownloadTemplate={() =>
+                downloadProductTemplateCsv({ filename: 'custom-component-request-template' })
+              }
               onSubmit={({ request }) => {
                 if (!request.trim()) return
                 setCartItems((items) => [
@@ -247,8 +259,8 @@ export default function MakeYourOwnKitPage() {
         <OrderOverviewModal
           order={pendingOrder}
           onCancel={() => setPendingOrder(null)}
-          onConfirm={() => {
-            createActiveOrder(university.id, pendingOrder)
+          onConfirm={async () => {
+            await createActiveOrder(university.id, pendingOrder)
             setPendingOrder(null)
             setCartItems([])
             navigate(`/orders/${university.loginCode}`)

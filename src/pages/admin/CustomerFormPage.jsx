@@ -19,11 +19,11 @@ export default function CustomerFormPage() {
 
   const title = isEdit ? 'Edit customer' : 'Create new customer'
 
-  function handleSubmit(formValues) {
+  async function handleSubmit(formValues) {
     if (isEdit) {
-      updateUniversity(id, formValues)
+      await updateUniversity(id, formValues)
     } else {
-      addUniversity(formValues)
+      await addUniversity(formValues)
     }
     navigate('/admin')
   }

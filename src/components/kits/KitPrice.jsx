@@ -42,12 +42,12 @@ export default function KitPrice({ pricing }) {
         <PriceDetailRow
           label="Price per kit"
           value={formatKr(pricePerKit)}
-          help="The estimated unit price for one complete kit."
+          help="Estimated price for one complete kit."
         />
         <PriceDetailRow
           label="Initial estimate price"
           value={formatKr(initialEstimatePrice)}
-          help="The first total estimate before final review and changes."
+          help="First estimate before final review."
         />
       </div>
     </div>

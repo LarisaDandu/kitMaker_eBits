@@ -234,7 +234,6 @@ export default function CustomerProductCard({ product, review, onApply }) {
           <ProductMeta label="kits" value={product.kitCount} />
           <ProductMeta label="total" value={totalQuantity} />
           <ProductMeta label="price" value={formatPrice(product.price ?? product.quoteLine)} />
-          <ProductMeta label="SKU" value={product.sku} />
         </div>
 
         {product.supplierLink ? (

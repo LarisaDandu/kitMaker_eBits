@@ -16,8 +16,23 @@ function UploadIcon() {
   )
 }
 
+function DownloadIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path
+        d="M12 3v12M7 10l5 5 5-5M5 21h14"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  )
+}
+
 export default function KitBuilderRequestForm({
   onSubmit,
+  onDownloadTemplate,
   title = 'Do you have a special request?',
   description = 'Write your desired components down below',
   submitLabel = 'Submit order',
@@ -64,22 +79,36 @@ export default function KitBuilderRequestForm({
         components that fit your needs.
       </p>
 
-      <label
-        className={cn(
-          'mt-6 inline-flex cursor-pointer items-center gap-3 rounded-xl border border-accent-2 px-8 py-3',
-          'font-body text-xl font-medium text-text transition-opacity hover:opacity-80',
-        )}
-      >
-        <input
-          id={fileId}
-          type="file"
-          accept=".csv,.xlsx"
-          onChange={(event) => setFileName(event.target.files?.[0]?.name ?? '')}
-          className="sr-only"
-        />
-        <UploadIcon />
-        Upload file
-      </label>
+      <div className="mt-6 flex flex-wrap items-center gap-3">
+        <label
+          className={cn(
+            'inline-flex cursor-pointer items-center gap-3 rounded-xl border border-accent-2 px-8 py-3',
+            'font-body text-xl font-medium text-text transition-opacity hover:opacity-80',
+          )}
+        >
+          <input
+            id={fileId}
+            type="file"
+            accept=".csv,.xlsx"
+            onChange={(event) => setFileName(event.target.files?.[0]?.name ?? '')}
+            className="sr-only"
+          />
+          <UploadIcon />
+          Upload file
+        </label>
+
+        {onDownloadTemplate ? (
+          <Button
+            type="button"
+            variant="outlineStrong"
+            rounded="xl"
+            onClick={onDownloadTemplate}
+          >
+            <DownloadIcon />
+            Download template CSV
+          </Button>
+        ) : null}
+      </div>
 
       {fileName ? (
         <p className="m-0 mt-3 text-sm text-text-secondary">{fileName}</p>

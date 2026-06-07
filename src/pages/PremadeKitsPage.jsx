@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router'
 import FilterPill from '../components/admin/FilterPill'
+import TeacherBackButton from '../components/customer/TeacherBackButton'
 import TeacherAccountMenu from '../components/customer/TeacherAccountMenu'
 import KitMakerCart from '../components/kits/KitMakerCart'
 import OrderOverviewModal from '../components/kits/OrderOverviewModal'
@@ -113,6 +114,9 @@ export default function PremadeKitsPage() {
     <main className="min-h-svh bg-background font-body text-text">
       <div className="box-border grid gap-9 px-8 py-12 lg:grid-cols-[1fr_360px] max-sm:px-4">
         <div>
+          <TeacherBackButton to={`/orders/${university.loginCode}/kit-builder`} className="mb-8">
+            Back
+          </TeacherBackButton>
           <header>
             <h1 className="m-0 font-headline text-4xl uppercase leading-tight">
               Ebits Kits
@@ -184,8 +188,8 @@ export default function PremadeKitsPage() {
         <OrderOverviewModal
           order={pendingOrder}
           onCancel={() => setPendingOrder(null)}
-          onConfirm={() => {
-            createActiveOrder(university.id, pendingOrder)
+          onConfirm={async () => {
+            await createActiveOrder(university.id, pendingOrder)
             setPendingOrder(null)
             setCartItems([])
             navigate(`/orders/${university.loginCode}`)

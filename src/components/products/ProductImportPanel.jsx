@@ -12,6 +12,7 @@ export default function ProductImportPanel({
   emptyLabel = 'No file imported',
   maxFileSizeMb = 5,
   acceptedFileLabel = 'CSV or XLSX under 5 MB',
+  onDownloadTemplate,
 }) {
   const inputId = useId()
   const inputRef = useRef(null)
@@ -83,6 +84,17 @@ export default function ProductImportPanel({
           <UploadIcon />
           Upload CSV/XLSX
         </label>
+        {onDownloadTemplate ? (
+          <Button
+            type="button"
+            variant="outlineStrong"
+            rounded="xl"
+            onClick={onDownloadTemplate}
+          >
+            <DownloadIcon />
+            Download template CSV
+          </Button>
+        ) : null}
         <input
           ref={inputRef}
           id={inputId}
@@ -119,6 +131,14 @@ export default function ProductImportPanel({
         </p>
       ) : null}
     </section>
+  )
+}
+
+function DownloadIcon() {
+  return (
+    <svg className="shrink-0" width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M12 3v12M7 10l5 5 5-5M5 21h14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
   )
 }
 

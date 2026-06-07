@@ -5,8 +5,10 @@ import { UNIVERSITY_STATUS } from '../../data/universities'
 import { cn } from '../../lib/cn'
 import { getActiveOrders } from '../../lib/universityUtils'
 
-function QuotePill({ order }) {
-  const requiresChanges = order.status === UNIVERSITY_STATUS.REQUIRES_CHANGES
+function QuotePill({ order, universityStatus }) {
+  const requiresChanges =
+    order.status === UNIVERSITY_STATUS.REQUIRES_CHANGES ||
+    universityStatus === UNIVERSITY_STATUS.REQUIRES_CHANGES
 
   return (
     <span
@@ -18,7 +20,7 @@ function QuotePill({ order }) {
       )}
     >
       Quote {order.quoteId}
-      {requiresChanges ? ' - requires changes' : ''}
+      {requiresChanges ? ' - Requires Changes' : ''}
     </span>
   )
 }
@@ -27,6 +29,9 @@ export default function UniversityCard({ university, onDelete }) {
   const navigate = useNavigate()
   const { id, name } = university
   const activeOrders = getActiveOrders(university)
+  const hasOrderRequiringChanges = activeOrders.some(
+    (order) => order.status === UNIVERSITY_STATUS.REQUIRES_CHANGES,
+  ) || university.status === UNIVERSITY_STATUS.REQUIRES_CHANGES
 
   function handleCardClick() {
     navigate(`/admin/customers/${id}`)
@@ -54,11 +59,20 @@ export default function UniversityCard({ university, onDelete }) {
     >
       <div className="grid gap-6 lg:grid-cols-[1fr_auto]" onClick={stopPropagation}>
         <div className="flex flex-wrap items-center gap-4">
-          <span className="inline-flex min-h-10 items-center rounded-full bg-accent-1-lighter px-5 text-lg text-text">
+          <span
+            className={cn(
+              'inline-flex min-h-10 items-center rounded-full px-5 text-lg text-text',
+              hasOrderRequiringChanges ? 'bg-accent-2-lighter' : 'bg-accent-1-lighter',
+            )}
+          >
             {activeOrders.length} Active {activeOrders.length === 1 ? 'order' : 'orders'}
           </span>
           {activeOrders.map((order) => (
-            <QuotePill key={order.id} order={order} />
+            <QuotePill
+              key={order.id}
+              order={order}
+              universityStatus={university.status}
+            />
           ))}
         </div>
 

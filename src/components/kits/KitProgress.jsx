@@ -38,7 +38,7 @@ export default function KitProgress({ progressStep = 0 }) {
       <h2 className={cn('m-0 mb-6 flex items-center gap-2 font-body text-base font-semibold text-text')}>
         Status
         <HelpTooltip label="Progress help">
-          Shows where the kit is in the review and ordering workflow.
+          Current stage for review, ordering, and assembly.
         </HelpTooltip>
       </h2>
 

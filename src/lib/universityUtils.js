@@ -1,4 +1,4 @@
-import { UNIVERSITY_STATUS } from '../data/universities'
+import { UNIVERSITY_STATUS } from '../data/universities.js'
 
 export const EMPTY_CUSTOMER_FORM = {
   name: '',
@@ -118,7 +118,6 @@ export function createOrderFromRequest(orderInput = {}) {
       pack: item.pack ?? `${item.quantity}pcs`,
       quoteLine: item.quoteLine ?? `${item.price ?? 0} kr`,
       supplierLink: item.supplierLink ?? item.link,
-      sku: item.sku,
     })),
     notes: orderInput.notes ?? '',
   }

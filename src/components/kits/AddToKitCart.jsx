@@ -20,7 +20,7 @@ export default function AddToKitCart({
   const total = items.reduce((sum, item) => sum + item.price * item.quantity, 0)
 
   return (
-    <aside className="sticky top-6 rounded-[20px] border border-accent-2 bg-background px-6 py-7 shadow-md">
+    <aside className="self-start rounded-[20px] border border-accent-2 bg-background px-6 py-7 shadow-md">
       <div className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-3 text-2xl text-text">
           <CartIcon />

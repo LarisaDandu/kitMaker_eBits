@@ -10,22 +10,22 @@ export default function KitStats({ stats }) {
     {
       label: 'Components checked',
       value: `${checked}/${totalComponents}`,
-      help: 'How many quoted components have been reviewed so far.',
+      help: 'Components reviewed so far.',
     },
     {
       label: 'Components approved',
       value: `${approved}/${totalComponents}`,
-      help: 'Components accepted by the school or admin review.',
+      help: 'Components accepted for the kit.',
     },
     {
       label: 'Components required',
       value: `${required}/${totalComponents}`,
-      help: 'Components that still need action or requested changes.',
+      help: 'Components needing changes or follow-up.',
     },
     {
       label: 'Total number of kits',
       value: String(totalKits),
-      help: 'How many complete kits the school is ordering.',
+      help: 'Complete kits requested by the school.',
     },
   ]
 

@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
-import { useNavigate, useParams } from 'react-router'
+import { useLocation, useNavigate, useParams } from 'react-router'
 import FilterPill from '../components/admin/FilterPill'
+import TeacherBackButton from '../components/customer/TeacherBackButton'
 import TeacherAccountMenu from '../components/customer/TeacherAccountMenu'
 import AddToKitCart from '../components/kits/AddToKitCart'
 import KitBuilderRequestForm from '../components/kits/KitBuilderRequestForm'
@@ -8,10 +9,11 @@ import KitMakerCategories from '../components/kits/KitMakerCategories'
 import KitMakerProductList from '../components/kits/KitMakerProductList'
 import OrderOverviewModal from '../components/kits/OrderOverviewModal'
 import SortSelect from '../components/ui/SortSelect'
-import { kitMakerProducts } from '../data/kitMakerProducts'
 import { useDebouncedValue } from '../hooks/useDebouncedValue'
+import { useKitCatalogProducts } from '../hooks/useKitCatalogProducts'
 import { useUniversityByLoginCode } from '../hooks/useUniversityByLoginCode'
 import { useUniversities } from '../hooks/useUniversities'
+import { downloadProductTemplateCsv } from '../lib/productTemplateCsv'
 import { findUniversityOrder } from '../lib/universityUtils'
 
 const SORT_OPTIONS = [
@@ -28,6 +30,7 @@ const PRICE_FILTERS = [
 
 export default function AddComponentsPage() {
   const { loginCode, orderId } = useParams()
+  const location = useLocation()
   const navigate = useNavigate()
   const [activeCategory, setActiveCategory] = useState('Microcontrollers')
   const [query, setQuery] = useState('')
@@ -39,7 +42,9 @@ export default function AddComponentsPage() {
 
   const university = useUniversityByLoginCode(loginCode)
   const { createActiveOrder } = useUniversities()
+  const { products: kitMakerProducts } = useKitCatalogProducts()
   const order = findUniversityOrder(university, orderId)
+  const isPreviousOrderFlow = location.pathname.includes('/previous/')
   const baseItem = useMemo(
     () =>
       order && university
@@ -77,7 +82,7 @@ export default function AddComponentsPage() {
       if (sortValue === 'priceHigh') return b.price - a.price
       return a.name.localeCompare(b.name)
     })
-  }, [activeCategory, debouncedQuery, priceFilter, sortValue])
+  }, [activeCategory, debouncedQuery, kitMakerProducts, priceFilter, sortValue])
 
   if (!university || !order) {
     return (
@@ -111,6 +116,16 @@ export default function AddComponentsPage() {
     <main className="min-h-svh bg-background font-body text-text">
       <div className="box-border grid gap-9 px-8 py-10 lg:grid-cols-[1fr_360px] max-sm:px-4">
         <div>
+          <TeacherBackButton
+            to={
+              isPreviousOrderFlow
+                ? `/orders/${university.loginCode}/previous/${order.id}`
+                : `/orders/${university.loginCode}/dashboard/${order.id}`
+            }
+            className="mb-8"
+          >
+            {isPreviousOrderFlow ? 'Back to previous order' : 'Back to dashboard'}
+          </TeacherBackButton>
           <header className="flex items-start justify-between gap-4">
             <div>
               <h1 className="m-0 font-headline text-3xl uppercase leading-tight">
@@ -174,6 +189,12 @@ export default function AddComponentsPage() {
               title="Can't find what you are looking for?"
               description="Write your desired components down below"
               submitLabel="Add to cart"
+              onDownloadTemplate={() =>
+                downloadProductTemplateCsv({
+                  filename: `order-${order.quoteId}-add-components-template`,
+                  quoteRow: order.quoteId,
+                })
+              }
               onSubmit={({ request }) => {
                 if (!request.trim()) return
                 setCartItems((items) => [
@@ -206,8 +227,8 @@ export default function AddComponentsPage() {
         <OrderOverviewModal
           order={pendingOrder}
           onCancel={() => setPendingOrder(null)}
-          onConfirm={() => {
-            createActiveOrder(university.id, pendingOrder)
+          onConfirm={async () => {
+            await createActiveOrder(university.id, pendingOrder)
             setPendingOrder(null)
             navigate(`/orders/${university.loginCode}`)
           }}

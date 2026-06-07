@@ -1,4 +1,5 @@
 import { Link, useParams } from 'react-router'
+import TeacherBackButton from '../components/customer/TeacherBackButton'
 import TeacherAccountMenu from '../components/customer/TeacherAccountMenu'
 import CustomerOrderCard from '../components/kits/CustomerOrderCard'
 import KitPrice from '../components/kits/KitPrice'
@@ -6,6 +7,7 @@ import PreviousOrderProductList from '../components/kits/PreviousOrderProductLis
 import { kitMakerProducts } from '../data/kitMakerProducts'
 import { UNIVERSITY_STATUS } from '../data/universities'
 import { useUniversityByLoginCode } from '../hooks/useUniversityByLoginCode'
+import { exportOrderCsv } from '../lib/csvExport'
 
 export default function PreviousOrderPage() {
   const { loginCode, orderId } = useParams()
@@ -23,6 +25,9 @@ export default function PreviousOrderPage() {
   return (
     <main className="min-h-svh bg-background font-body text-text">
       <div className="box-border flex flex-col gap-8 px-8 py-10 max-sm:px-4">
+        <TeacherBackButton to={`/orders/${university.loginCode}`} className="w-fit">
+          Back to orders
+        </TeacherBackButton>
         <header className="flex items-center justify-between gap-4">
           <h1 className="m-0 font-headline text-4xl uppercase">{order.name}</h1>
           <TeacherAccountMenu university={university} />
@@ -36,7 +41,7 @@ export default function PreviousOrderPage() {
             }}
             status={UNIVERSITY_STATUS.INACTIVE_ORDERS}
             showInactiveSummary
-            onExportCsv={() => window.alert('Export CSV (demo)')}
+            onExportCsv={() => exportOrderCsv(university, order, order.products ?? [])}
           />
           <div className="flex flex-col gap-6">
             <KitPrice pricing={order.pricing ?? university.kit.pricing} />

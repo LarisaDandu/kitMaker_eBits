@@ -6,6 +6,7 @@ import KitOverview from '../../components/kits/KitOverview'
 import KitPrice from '../../components/kits/KitPrice'
 import KitProgress from '../../components/kits/KitProgress'
 import PreviousOrders from '../../components/kits/PreviousOrders'
+import ProductImportPanel from '../../components/products/ProductImportPanel'
 import ProductList from '../../components/products/ProductList'
 import Button from '../../components/ui/Button'
 import ConfirmDialog from '../../components/ui/ConfirmDialog'
@@ -17,6 +18,10 @@ import {
 import { useDebouncedValue } from '../../hooks/useDebouncedValue'
 import { useUniversities } from '../../hooks/useUniversities'
 import { cn } from '../../lib/cn'
+import { exportOrderCsv } from '../../lib/csvExport'
+import { downloadProductTemplateCsv } from '../../lib/productTemplateCsv'
+import { updateOrderStats } from '../../lib/repositories/ordersRepository'
+import { mergeProductsForOrder } from '../../lib/repositories/productsRepository'
 import { formatLastUpdated } from '../../lib/time'
 import { getActiveOrders } from '../../lib/universityUtils'
 
@@ -39,6 +44,21 @@ function filterProducts(products, searchQuery, statusFilter) {
     .sort((a, b) => Number(a.quoteRow ?? 0) - Number(b.quoteRow ?? 0))
 }
 
+function getStatsFromProducts(products, totalKits) {
+  const approved = products.filter((product) => product.status === PRODUCT_STATUS.APPROVED).length
+  const rejected = products.filter((product) => product.status === PRODUCT_STATUS.REJECTED).length
+  const changes = products.filter((product) => product.status === PRODUCT_STATUS.CHANGES).length
+
+  return {
+    checked: approved + rejected + changes,
+    totalComponents: products.length,
+    approved,
+    rejected,
+    required: rejected + changes,
+    totalKits,
+  }
+}
+
 function ContactInfo({ university }) {
   const address = [university.addressLine1, university.addressLine2]
     .filter(Boolean)
@@ -52,9 +72,9 @@ function ContactInfo({ university }) {
   ].filter(([, value]) => value)
 
   return (
-    <section className="rounded-[20px] bg-background-secondary px-6 py-5">
-      <h3 className="m-0 text-2xl font-semibold text-text">Contact info</h3>
-      <div className="mt-4 grid gap-3 md:grid-cols-2">
+    <section className="min-w-0 flex-1 rounded-[20px] bg-background-secondary px-6 py-5">
+      <h3 className="m-0 text-xl font-semibold text-text">Contact info</h3>
+      <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
         {rows.map(([label, value]) => (
           <div key={label} className="rounded-xl bg-background px-4 py-3">
             <p className="m-0 text-sm font-medium text-text-secondary">{label}</p>
@@ -91,6 +111,11 @@ function OrderDashboardCard({
   activeFilter,
   onFilterChange,
   onToggle,
+  importSummary,
+  onImport,
+  onResetImport,
+  onSaveImport,
+  isSavingImport,
 }) {
   const orderUniversity = {
     ...university,
@@ -108,13 +133,11 @@ function OrderDashboardCard({
     <section className="rounded-[20px] bg-background-secondary px-6 py-6">
       <KitOverview
         university={orderUniversity}
-        onExportCsv={() => window.alert('Export CSV (demo)')}
+        onExportCsv={() => exportOrderCsv(university, order, products)}
       />
 
       {expanded ? (
         <div className="mt-8 flex flex-col gap-6">
-          <ContactInfo university={university} />
-
           <div className="grid gap-5 lg:grid-cols-[1fr_360px]">
             <KitProgress progressStep={order.progressStep ?? 0} />
             <KitPrice pricing={order.pricing} />
@@ -132,6 +155,35 @@ function OrderDashboardCard({
             isSearching={searchQuery !== debouncedSearchQuery}
             className="px-4 py-4"
           />
+
+          <ProductImportPanel
+            title="Import products to this order"
+            description="Download the template, fill it out, then upload it to merge rows into this order by quote row or product name."
+            importSummary={importSummary}
+            onImport={onImport}
+            onReset={onResetImport}
+            resetLabel="Clear import preview"
+            emptyLabel="No import preview"
+            onDownloadTemplate={() =>
+              downloadProductTemplateCsv({
+                filename: `order-${order.quoteId}-template`,
+                quoteRow: order.quoteId,
+              })
+            }
+          />
+
+          {importSummary ? (
+            <Button
+              type="button"
+              variant="accent"
+              rounded="xl"
+              onClick={onSaveImport}
+              disabled={isSavingImport}
+              className="w-fit"
+            >
+              {isSavingImport ? 'Saving imported products...' : 'Save imported products'}
+            </Button>
+          ) : null}
 
           <ProductList
             products={filteredProducts}
@@ -158,7 +210,7 @@ function OrderDashboardCard({
 export default function UniversityDetailPage() {
   const { id } = useParams()
   const navigate = useNavigate()
-  const { getUniversity, softDeleteUniversity } = useUniversities()
+  const { getUniversity, reloadUniversities, softDeleteUniversity } = useUniversities()
   const university = getUniversity(id)
   const activeOrders = getActiveOrders(university)
 
@@ -166,9 +218,9 @@ export default function UniversityDetailPage() {
   const debouncedSearchQuery = useDebouncedValue(searchQuery)
   const [activeFilter, setActiveFilter] = useState(PRODUCT_STATUS.ALL)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
-  const [expandedOrderIds, setExpandedOrderIds] = useState(() =>
-    activeOrders[0]?.id ? new Set([activeOrders[0].id]) : new Set(),
-  )
+  const [expandedOrderIds, setExpandedOrderIds] = useState(() => new Set())
+  const [importSummaries, setImportSummaries] = useState({})
+  const [savingImportOrderId, setSavingImportOrderId] = useState('')
 
   if (!university || activeOrders.length === 0) {
     navigate('/admin', { replace: true })
@@ -198,6 +250,43 @@ export default function UniversityDetailPage() {
     })
   }
 
+  function handleImport(orderId, summary) {
+    setImportSummaries((current) => ({
+      ...current,
+      [orderId]: summary,
+    }))
+  }
+
+  function handleResetImport(orderId) {
+    setImportSummaries((current) => {
+      const next = { ...current }
+      delete next[orderId]
+      return next
+    })
+  }
+
+  async function handleSaveImport(order) {
+    const summary = importSummaries[order.id]
+    if (!summary) return
+
+    setSavingImportOrderId(order.id)
+    try {
+      const { products } = await mergeProductsForOrder({
+        universityId: university.id,
+        orderId: order.id,
+        products: summary.products,
+      })
+      await updateOrderStats(
+        order.id,
+        getStatsFromProducts(products, order.stats?.totalKits ?? summary.kitCount ?? 0),
+      )
+      handleResetImport(order.id)
+      await reloadUniversities()
+    } finally {
+      setSavingImportOrderId('')
+    }
+  }
+
   return (
     <div className={cn('min-h-svh bg-background font-body text-left text-text')}>
       <div
@@ -224,8 +313,12 @@ export default function UniversityDetailPage() {
           >
             &lt; Back to clients overview
           </Link>
+        </div>
 
-          <div className="flex flex-wrap gap-3">
+        <div className="grid items-start gap-5 lg:grid-cols-[1fr_auto]">
+          <ContactInfo university={university} />
+
+          <div className="flex flex-wrap gap-3 lg:justify-end">
             <Button
               type="button"
               variant="outlineStrong"
@@ -259,12 +352,17 @@ export default function UniversityDetailPage() {
             activeFilter={activeFilter}
             onFilterChange={setActiveFilter}
             onToggle={() => toggleOrder(order.id)}
+            importSummary={importSummaries[order.id]}
+            onImport={(summary) => handleImport(order.id, summary)}
+            onResetImport={() => handleResetImport(order.id)}
+            onSaveImport={() => handleSaveImport(order)}
+            isSavingImport={savingImportOrderId === order.id}
           />
         ))}
 
         <PreviousOrders
           orders={university.previousOrders ?? []}
-          onExportCsv={() => window.alert('Export previous order CSV (demo)')}
+          onExportCsv={(order) => exportOrderCsv(university, order, order.products ?? [])}
         />
       </div>
 

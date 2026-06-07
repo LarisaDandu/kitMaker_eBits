@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router'
 import SearchFilterPanel from '../components/admin/SearchFilterPanel'
+import TeacherBackButton from '../components/customer/TeacherBackButton'
 import TeacherAccountMenu from '../components/customer/TeacherAccountMenu'
 import CustomerOrderCard from '../components/kits/CustomerOrderCard'
 import CustomerReviewProgress from '../components/kits/CustomerReviewProgress'
@@ -17,6 +18,8 @@ import { useDebouncedValue } from '../hooks/useDebouncedValue'
 import { UNIVERSITY_STATUS } from '../data/universities'
 import { useUniversityByLoginCode } from '../hooks/useUniversityByLoginCode'
 import { cn } from '../lib/cn'
+import { exportOrderCsv } from '../lib/csvExport'
+import { downloadProductTemplateCsv } from '../lib/productTemplateCsv'
 import { formatLastUpdated } from '../lib/time'
 import { findUniversityOrder, getPrimaryActiveOrder } from '../lib/universityUtils'
 
@@ -88,7 +91,6 @@ export default function CustomerKitDashboardPage() {
         !query ||
         product.name.toLowerCase().includes(query) ||
         product.subtitle?.toLowerCase().includes(query) ||
-        product.sku?.toLowerCase().includes(query) ||
         product.variant?.toLowerCase().includes(query)
 
       return matchesStatus && matchesSearch
@@ -146,6 +148,9 @@ export default function CustomerKitDashboardPage() {
   return (
     <main className="min-h-svh bg-background font-body text-text">
       <div className="box-border mx-auto flex max-w-[1200px] flex-col gap-6 px-6 py-8 pb-12 max-sm:px-4">
+        <TeacherBackButton to={`/orders/${university.loginCode}`} className="w-fit">
+          Back to orders
+        </TeacherBackButton>
         <header className="flex items-center justify-between gap-4">
           <h1 className="m-0 font-headline text-3xl uppercase leading-tight">
             Order Dashboard
@@ -164,7 +169,7 @@ export default function CustomerKitDashboardPage() {
             order={selectedOrder}
             status={selectedOrder.status ?? UNIVERSITY_STATUS.ACTIVE_ORDER}
             isActive
-            onExportCsv={() => window.alert('Export CSV (demo)')}
+            onExportCsv={() => exportOrderCsv(university, selectedOrder, products)}
           />
 
           <div className="flex flex-col gap-5">
@@ -185,13 +190,19 @@ export default function CustomerKitDashboardPage() {
           importSummary={importSummary}
           onImport={handleImport}
           onReset={handleResetImport}
+          onDownloadTemplate={() =>
+            downloadProductTemplateCsv({
+              filename: `order-${selectedOrder.quoteId}-template`,
+              quoteRow: selectedOrder.quoteId,
+            })
+          }
         />
 
         <section className="rounded-[20px] bg-background-secondary px-6 py-6 max-sm:px-4">
           <SearchFilterPanel
             searchQuery={searchQuery}
             onSearchChange={setSearchQuery}
-            searchPlaceholder="Search by product name, SKU, variant, quote row..."
+            searchPlaceholder="Search by product name, variant, quote row..."
             filters={FILTERS}
             activeFilter={activeFilter}
             onFilterChange={setActiveFilter}

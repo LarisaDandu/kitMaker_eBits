@@ -8,11 +8,13 @@
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
+    "seed:supabase": "node scripts/seedSupabase.mjs",
     "deploy:clean": "gh-pages-clean",
     "predeploy": "npm run build",
     "deploy": "gh-pages -d dist -r https://github.com/LarisaDandu/kitMaker_eBits.git"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.107.0",
     "@tailwindcss/vite": "^4.3.0",
     "clsx": "^2.1.1",
     "jszip": "^3.10.1",

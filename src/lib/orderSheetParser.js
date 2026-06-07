@@ -4,6 +4,20 @@ const URL_PATTERN = /^https?:\/\//i
 const IMAGE_URL_PATTERN = /\.(avif|gif|jpe?g|png|svg|webp)(\?|#|$)/i
 const KIT_COUNT_PATTERN = /(\d+)\s*kits?\s+in\s+total/i
 const USD_TO_DKK_RATE = 6.5
+export const ORDER_TEMPLATE_HEADERS = [
+  'quote_row',
+  'name',
+  'subtitle',
+  'variant',
+  'pcs_per_kit',
+  'order_quantity',
+  'unit_price_dkk',
+  'pack',
+  'supplier_link',
+  'status',
+  'customer_reply_status',
+  'customer_reply_comment',
+]
 
 function parseXml(xml) {
   return new DOMParser().parseFromString(xml, 'application/xml')
@@ -35,12 +49,6 @@ function columnFromCellRef(ref) {
 
 function normalizeHeader(value) {
   return String(value ?? '').trim().toLowerCase()
-}
-
-function cleanSku(value) {
-  return String(value ?? '')
-    .replace(/^sku:\s*/i, '')
-    .trim()
 }
 
 function toNumber(value) {
@@ -142,6 +150,89 @@ function parseCsvRows(text) {
     }, {}),
     values,
   }))
+}
+
+function getRowValue(row, headerMap, header) {
+  const index = headerMap.get(header)
+  if (index == null) return ''
+  return row.values[index]?.trim() ?? ''
+}
+
+function isTemplateHeaderRow(row) {
+  const headers = row.values.map(normalizeHeader)
+  return ORDER_TEMPLATE_HEADERS.every((header) => headers.includes(header))
+}
+
+function findTemplateHeaderRowIndex(rows) {
+  return rows.findIndex(isTemplateHeaderRow)
+}
+
+function buildTemplateProducts(rows, fileName) {
+  const headerRowIndex = findTemplateHeaderRowIndex(rows)
+  if (headerRowIndex === -1) return null
+
+  const headerMap = new Map(
+    rows[headerRowIndex].values.map((header, index) => [
+      normalizeHeader(header),
+      index,
+    ]),
+  )
+  const products = []
+
+  for (const row of rows.slice(headerRowIndex + 1)) {
+    const name = getRowValue(row, headerMap, 'name')
+    const quoteRow = toNumber(getRowValue(row, headerMap, 'quote_row'))
+    const pcsPerKit = toNumber(getRowValue(row, headerMap, 'pcs_per_kit'))
+    const orderQuantity = toNumber(getRowValue(row, headerMap, 'order_quantity'))
+    const unitPriceDkk = toNumber(getRowValue(row, headerMap, 'unit_price_dkk'))
+    const status =
+      getRowValue(row, headerMap, 'status') || 'pending_review'
+    const customerReplyStatus = getRowValue(
+      row,
+      headerMap,
+      'customer_reply_status',
+    )
+    const customerReplyComment = getRowValue(
+      row,
+      headerMap,
+      'customer_reply_comment',
+    )
+
+    if (!name || pcsPerKit == null) continue
+
+    products.push({
+      id: `template-${row.number}-${slugify(name)}`,
+      name,
+      subtitle: getRowValue(row, headerMap, 'subtitle') || 'Imported product',
+      status,
+      pcsPerKit,
+      price: unitPriceDkk ?? 0,
+      currency: 'DKK',
+      orderQuantity: orderQuantity ?? pcsPerKit,
+      quoteRow,
+      variant: getRowValue(row, headerMap, 'variant'),
+      pack: getRowValue(row, headerMap, 'pack'),
+      supplierLink: getRowValue(row, headerMap, 'supplier_link'),
+      customerReply:
+        customerReplyStatus || customerReplyComment
+          ? {
+              status: customerReplyStatus || status,
+              comment: customerReplyComment,
+            }
+          : null,
+    })
+  }
+
+  if (products.length === 0) {
+    throw new Error('No template product rows with name and pcs_per_kit were found.')
+  }
+
+  return {
+    fileName,
+    kitCount: products[0]?.orderQuantity ?? null,
+    products,
+    source: 'template',
+  }
 }
 
 function readSharedStrings(zip, sharedStringsPath) {
@@ -311,7 +402,6 @@ function buildProducts(rows, imagesByRow, fileName) {
   for (const row of rows.slice(headerRowIndex + 1)) {
     const name = row.cells.A?.value?.trim() ?? ''
     const variantOrLink = row.cells.B?.value?.trim() ?? ''
-    const sku = cleanSku(row.cells.D?.value) || cleanSku(row.cells.C?.value)
     const pcsPerKit = toNumber(row.cells.E?.value)
     const priceUsd = toNumber(row.cells.F?.value)
     const rowValues = Object.values(row.cells).map((cell) => cell.value)
@@ -326,9 +416,9 @@ function buildProducts(rows, imagesByRow, fileName) {
       (isImageUrl(supplierLink) ? supplierLink : '')
 
     products.push({
-      id: `import-${row.number}-${slugify(sku || name)}`,
+      id: `import-${row.number}-${slugify(name)}`,
       name,
-      subtitle: variant || sku || 'Imported product',
+      subtitle: variant || 'Imported product',
       status: 'pending_review',
       pcsPerKit,
       price: convertUsdToDkk(priceUsd),
@@ -339,7 +429,6 @@ function buildProducts(rows, imagesByRow, fileName) {
       kitCount,
       orderQuantity: kitCount ? pcsPerKit * kitCount : pcsPerKit,
       quoteRow: row.number,
-      sku,
       variant,
       supplierLink,
       imageUrl,
@@ -362,12 +451,13 @@ export async function parseOrderSheetBuffer(arrayBuffer, fileName = 'order-sheet
 
   if (lowerName.endsWith('.csv')) {
     const text = new TextDecoder().decode(arrayBuffer)
-    return buildProducts(parseCsvRows(text), new Map(), fileName)
+    const rows = parseCsvRows(text)
+    return buildTemplateProducts(rows, fileName) ?? buildProducts(rows, new Map(), fileName)
   }
 
   if (lowerName.endsWith('.xlsx')) {
     const { rows, imagesByRow } = await parseXlsxRows(arrayBuffer)
-    return buildProducts(rows, imagesByRow, fileName)
+    return buildTemplateProducts(rows, fileName) ?? buildProducts(rows, imagesByRow, fileName)
   }
 
   throw new Error('Please upload a CSV or XLSX file.')

@@ -55,6 +55,16 @@ function getOrderStageLabel(order, status) {
   return 'Components found'
 }
 
+function getOrderStageHelp(stageLabel) {
+  if (stageLabel === 'Components found') {
+    return 'Review the kit components, approve or request changes, and leave comments if needed.'
+  }
+  if (stageLabel === 'Kit assembly') {
+    return 'Components have been received, and kit assembly is currently in progress. Your order is on track.'
+  }
+  return ''
+}
+
 export default function CustomerOrderCard({
   order,
   status,
@@ -85,7 +95,7 @@ export default function CustomerOrderCard({
             <span className="inline-flex w-fit items-center gap-2 rounded-full border border-text bg-background-third px-4 py-2 font-body text-base font-medium text-text">
               {stageLabel}
               <HelpTooltip label={`${stageLabel} help`}>
-                Current progress stage for this order.
+                {getOrderStageHelp(stageLabel)}
               </HelpTooltip>
             </span>
           ) : null}
@@ -199,22 +209,22 @@ export default function CustomerOrderCard({
             <CustomerStat
               label="Components checked"
               value={`${stats.checked}/${stats.totalComponents}`}
-              help="How many components in this order have been reviewed."
+              help="Components already reviewed by the school."
             />
             <CustomerStat
               label="Components approved"
               value={`${stats.approved}/${stats.totalComponents}`}
-              help="Components approved for the kit."
+              help="Components accepted for this kit."
             />
             <CustomerStat
               label="Components rejected"
               value={`${rejected}/${stats.totalComponents}`}
-              help="Components that need replacement or changes."
+              help="Components needing changes or replacement."
             />
             <CustomerStat
               label="Total number of kits"
               value={String(stats.totalKits)}
-              help="The quantity of complete kits ordered."
+              help="Complete kits requested for this order."
             />
           </div>
 
