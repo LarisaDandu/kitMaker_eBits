@@ -18,6 +18,10 @@ function ViewButton({ active, children, onClick, label }) {
   )
 }
 
+function publicAsset(path) {
+  return `${import.meta.env.BASE_URL}${path}`
+}
+
 export default function KitMakerProductList({
   products,
   view,
@@ -33,14 +37,24 @@ export default function KitMakerProductList({
           onClick={() => onViewChange('list')}
           label="Show list view"
         >
-          =
+          <img
+            src={publicAsset('List.png')}
+            alt=""
+            className="size-7 object-contain"
+            aria-hidden="true"
+          />
         </ViewButton>
         <ViewButton
           active={view === 'grid'}
           onClick={() => onViewChange('grid')}
           label="Show card view"
         >
-          #
+          <img
+            src={publicAsset(view === 'grid' ? 'Grid selected.png' : 'Grid.png')}
+            alt=""
+            className="size-7 object-contain"
+            aria-hidden="true"
+          />
         </ViewButton>
       </div>
 

@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { useParams } from 'react-router'
+import { useNavigate, useParams } from 'react-router'
 import FilterPill from '../components/admin/FilterPill'
 import TeacherAccountMenu from '../components/customer/TeacherAccountMenu'
 import KitMakerCart from '../components/kits/KitMakerCart'
@@ -8,6 +8,7 @@ import PremadeKitList from '../components/kits/PremadeKitList'
 import SortSelect from '../components/ui/SortSelect'
 import { useDebouncedValue } from '../hooks/useDebouncedValue'
 import { useUniversityByLoginCode } from '../hooks/useUniversityByLoginCode'
+import { useUniversities } from '../hooks/useUniversities'
 
 const part = (id, name, quantity = 1) => ({
   id,
@@ -46,6 +47,7 @@ const PRICE_FILTERS = [
 
 export default function PremadeKitsPage() {
   const { loginCode } = useParams()
+  const navigate = useNavigate()
   const [query, setQuery] = useState('')
   const debouncedQuery = useDebouncedValue(query)
   const [sortValue, setSortValue] = useState('name')
@@ -55,6 +57,7 @@ export default function PremadeKitsPage() {
   const [pendingOrder, setPendingOrder] = useState(null)
 
   const university = useUniversityByLoginCode(loginCode)
+  const { createActiveOrder } = useUniversities()
 
   const filteredKits = useMemo(() => {
     const normalizedQuery = debouncedQuery.trim().toLowerCase()
@@ -182,9 +185,10 @@ export default function PremadeKitsPage() {
           order={pendingOrder}
           onCancel={() => setPendingOrder(null)}
           onConfirm={() => {
+            createActiveOrder(university.id, pendingOrder)
             setPendingOrder(null)
             setCartItems([])
-            window.alert('Order submitted (demo)')
+            navigate(`/orders/${university.loginCode}`)
           }}
         />
       ) : null}

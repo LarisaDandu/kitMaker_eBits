@@ -9,8 +9,8 @@ export default function UniversityList({
   return (
     <section
       className={cn(
-        'rounded-[20px] bg-background-third px-6 pt-5 pb-6',
-        'max-sm:rounded-2xl max-sm:px-4 max-sm:py-4',
+        'px-6 pt-5 pb-6',
+        'max-sm:px-0 max-sm:py-4',
       )}
       aria-label="Client list"
     >
@@ -19,7 +19,7 @@ export default function UniversityList({
           {emptyMessage}
         </p>
       ) : (
-        <div className="flex flex-col gap-5">
+        <div className="mx-auto flex max-w-[1320px] flex-col gap-8">
           {universities.map((university) => (
             <UniversityCard
               key={university.id}

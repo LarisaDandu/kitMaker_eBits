@@ -28,6 +28,8 @@ export default function App() {
       <Route path="/orders/:loginCode" element={<OrdersLayout />}>
         <Route index element={<CustomerOrdersPage />} />
         <Route path="dashboard" element={<CustomerKitDashboardPage />} />
+        <Route path="dashboard/:orderId" element={<CustomerKitDashboardPage />} />
+        <Route path="dashboard/:orderId/add-components" element={<AddComponentsPage />} />
         <Route path="kit-builder" element={<CustomerKitBuilderPage />} />
         <Route path="kit-builder/custom" element={<MakeYourOwnKitPage />} />
         <Route path="kit-builder/premade" element={<PremadeKitsPage />} />

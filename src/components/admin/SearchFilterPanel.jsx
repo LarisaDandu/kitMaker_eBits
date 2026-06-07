@@ -30,21 +30,22 @@ export default function SearchFilterPanel({
     >
       <div
         className={cn(
-          'flex flex-wrap items-center justify-between gap-4',
+          'flex items-center justify-between gap-4 max-lg:flex-wrap',
           action ? 'max-sm:flex-col max-sm:items-stretch' : '',
         )}
       >
         <div
           className={cn(
-            'flex min-w-[280px] flex-1 flex-wrap items-center gap-3',
+            'flex min-w-0 flex-1 items-center gap-3 overflow-x-auto',
+            'max-lg:flex-wrap max-lg:overflow-visible',
             'max-sm:w-full max-sm:flex-col max-sm:items-stretch',
           )}
         >
           <label
             className={cn(
-              'flex min-w-[200px] items-center gap-2 rounded-full border-2 border-accent-2 bg-background px-4 py-2 text-text',
+              'flex min-w-[220px] max-w-[560px] flex-1 items-center gap-2 rounded-full border-2 border-accent-2 bg-background px-4 py-2 text-text',
               'focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-accent-2-lighter',
-              'max-sm:w-full',
+              'max-sm:w-full max-sm:max-w-none',
             )}
           >
             <SearchIcon />
@@ -68,7 +69,11 @@ export default function SearchFilterPanel({
             />
           ) : null}
 
-          <div className="flex flex-wrap gap-2" role="group" aria-label={filterAriaLabel}>
+          <div
+            className="flex shrink-0 flex-nowrap gap-2 max-lg:flex-wrap"
+            role="group"
+            aria-label={filterAriaLabel}
+          >
             {filters.map((filter) => (
               <FilterPill
                 key={filter.id}
@@ -80,7 +85,11 @@ export default function SearchFilterPanel({
           </div>
         </div>
 
-        {action ? <div className="max-sm:flex max-sm:justify-center">{action}</div> : null}
+        {action ? (
+          <div className="shrink-0 max-sm:flex max-sm:justify-center">
+            {action}
+          </div>
+        ) : null}
       </div>
 
       <p

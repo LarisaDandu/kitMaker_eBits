@@ -3,11 +3,13 @@ import TeacherAccountMenu from '../components/customer/TeacherAccountMenu'
 import KitBuilderChoiceCard from '../components/kits/KitBuilderChoiceCard'
 import KitBuilderRequestForm from '../components/kits/KitBuilderRequestForm'
 import { useUniversityByLoginCode } from '../hooks/useUniversityByLoginCode'
+import { useUniversities } from '../hooks/useUniversities'
 
 export default function CustomerKitBuilderPage() {
   const { loginCode } = useParams()
   const navigate = useNavigate()
   const university = useUniversityByLoginCode(loginCode)
+  const { createActiveOrder } = useUniversities()
 
   if (!university) {
     return (
@@ -43,7 +45,22 @@ export default function CustomerKitBuilderPage() {
 
         <div className="mt-36 max-lg:mt-16">
           <KitBuilderRequestForm
-            onSubmit={() => window.alert('Order submitted (demo)')}
+            onSubmit={({ request, fileName }) => {
+              createActiveOrder(university.id, {
+                kitName: fileName || 'Special request kit',
+                notes: request,
+                kitCount: 1,
+                items: [
+                  {
+                    id: `request-${Date.now()}`,
+                    name: request.trim() || fileName || 'Special component request',
+                    price: 0,
+                    quantity: 1,
+                  },
+                ],
+              })
+              navigate(`/orders/${university.loginCode}`)
+            }}
           />
         </div>
       </div>

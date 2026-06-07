@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { useParams } from 'react-router'
+import { useNavigate, useParams } from 'react-router'
 import SearchFilterPanel from '../components/admin/SearchFilterPanel'
 import TeacherAccountMenu from '../components/customer/TeacherAccountMenu'
 import CustomerOrderCard from '../components/kits/CustomerOrderCard'
@@ -11,13 +11,14 @@ import ProductImportPanel from '../components/products/ProductImportPanel'
 import Button from '../components/ui/Button'
 import {
   PRODUCT_STATUS,
-  getProductsByUniversity,
+  getProductsByOrder,
 } from '../data/products'
 import { useDebouncedValue } from '../hooks/useDebouncedValue'
 import { UNIVERSITY_STATUS } from '../data/universities'
 import { useUniversityByLoginCode } from '../hooks/useUniversityByLoginCode'
 import { cn } from '../lib/cn'
 import { formatLastUpdated } from '../lib/time'
+import { findUniversityOrder, getPrimaryActiveOrder } from '../lib/universityUtils'
 
 const FILTERS = [
   { id: 'all', label: 'All' },
@@ -25,12 +26,6 @@ const FILTERS = [
   { id: PRODUCT_STATUS.REJECTED, label: 'Rejected' },
   { id: PRODUCT_STATUS.APPROVED, label: 'Approved' },
   { id: PRODUCT_STATUS.CHANGES, label: 'Changes' },
-]
-
-const SORT_OPTIONS = [
-  { id: 'quoteRow', label: 'Quote row' },
-  { id: 'name', label: 'Name' },
-  { id: 'status', label: 'Review status' },
 ]
 
 function getInitialReviews(products) {
@@ -63,18 +58,20 @@ function revokeImportedImageUrls(importSummary) {
 }
 
 export default function CustomerKitDashboardPage() {
-  const { loginCode } = useParams()
+  const { loginCode, orderId } = useParams()
+  const navigate = useNavigate()
   const [searchQuery, setSearchQuery] = useState('')
   const debouncedSearchQuery = useDebouncedValue(searchQuery)
   const [activeFilter, setActiveFilter] = useState('all')
-  const [sortValue, setSortValue] = useState('quoteRow')
   const [importSummary, setImportSummary] = useState(null)
   const university = useUniversityByLoginCode(loginCode)
+  const selectedOrder = orderId
+    ? findUniversityOrder(university, orderId)
+    : getPrimaryActiveOrder(university)
 
-  const demoProducts = useMemo(
-    () => (university ? getProductsByUniversity(university.id) : []),
-    [university],
-  )
+  const demoProducts = selectedOrder
+    ? selectedOrder.products ?? getProductsByOrder(selectedOrder.id)
+    : []
   const products = importSummary?.products ?? demoProducts
   const [reviews, setReviews] = useState(() => getInitialReviews(demoProducts))
 
@@ -97,18 +94,12 @@ export default function CustomerKitDashboardPage() {
       return matchesStatus && matchesSearch
     })
 
-    return [...filtered].sort((a, b) => {
-      if (sortValue === 'name') return a.name.localeCompare(b.name)
-      if (sortValue === 'status') {
-        const aStatus = reviews[a.id]?.status ?? a.status
-        const bStatus = reviews[b.id]?.status ?? b.status
-        return aStatus.localeCompare(bStatus)
-      }
-      return Number(a.quoteRow ?? 0) - Number(b.quoteRow ?? 0)
-    })
-  }, [activeFilter, products, reviews, debouncedSearchQuery, sortValue])
+    return [...filtered].sort(
+      (a, b) => Number(a.quoteRow ?? 0) - Number(b.quoteRow ?? 0),
+    )
+  }, [activeFilter, products, reviews, debouncedSearchQuery])
 
-  if (!university) {
+  if (!university || !selectedOrder) {
     return (
       <main className="min-h-svh bg-background px-8 py-10 font-body text-text">
         <h1 className="m-0 font-headline text-4xl uppercase">Order not found</h1>
@@ -121,7 +112,7 @@ export default function CustomerKitDashboardPage() {
 
   const counts = getReviewCounts(reviews)
   const processed = counts.approved + counts.rejected + counts.changes
-  const reviewTotal = products.length || university.kit.stats.totalComponents
+  const reviewTotal = products.length || selectedOrder.stats.totalComponents
 
   function handleApplyReview(productId, review) {
     setReviews((current) => {
@@ -170,14 +161,14 @@ export default function CustomerKitDashboardPage() {
 
         <div className="grid gap-5 lg:grid-cols-[1.4fr_0.8fr]">
           <CustomerOrderCard
-            order={university.kit}
-            status={UNIVERSITY_STATUS.ACTIVE_ORDER}
+            order={selectedOrder}
+            status={selectedOrder.status ?? UNIVERSITY_STATUS.ACTIVE_ORDER}
             isActive
             onExportCsv={() => window.alert('Export CSV (demo)')}
           />
 
           <div className="flex flex-col gap-5">
-            <KitPrice pricing={university.kit.pricing} />
+            <KitPrice pricing={selectedOrder.pricing} />
             <CustomerReviewProgress
               total={reviewTotal}
               approved={counts.approved}
@@ -188,7 +179,7 @@ export default function CustomerKitDashboardPage() {
           </div>
         </div>
 
-        <KitProgress progressStep={university.kit.progressStep ?? 0} />
+        <KitProgress progressStep={selectedOrder.progressStep ?? 0} />
 
         <ProductImportPanel
           importSummary={importSummary}
@@ -207,14 +198,15 @@ export default function CustomerKitDashboardPage() {
             filterAriaLabel="Filter products by review status"
             ariaLabel="Search and filter products"
             isSearching={searchQuery !== debouncedSearchQuery}
-            sortValue={sortValue}
-            sortOptions={SORT_OPTIONS}
-            onSortChange={setSortValue}
             className="px-4 py-4"
             action={
               <Button
                 type="button"
-                onClick={() => window.alert('Add more products (demo)')}
+                onClick={() =>
+                  navigate(
+                    `/orders/${university.loginCode}/dashboard/${selectedOrder.id}/add-components`,
+                  )
+                }
                 variant="accent"
               >
                 <PlusIcon />

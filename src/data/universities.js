@@ -24,9 +24,31 @@ export const FILTER_OPTIONS = [
 ]
 
 const defaultPreviousOrders = [
-  { id: 'prev-1', name: '2025 Semester kit', status: UNIVERSITY_STATUS.INACTIVE_ORDERS },
-  { id: 'prev-2', name: '2024 Semester kit', status: UNIVERSITY_STATUS.INACTIVE_ORDERS },
+  { id: 'prev-1', name: '2025 Semester kit', status: UNIVERSITY_STATUS.INACTIVE_ORDERS, stats: { totalKits: 30 } },
+  { id: 'prev-2', name: '2024 Semester kit', status: UNIVERSITY_STATUS.INACTIVE_ORDERS, stats: { totalKits: 30 } },
 ]
+
+const semesterKit = {
+  id: 'order-1-2026',
+  name: '2026 Semester kit Class 2X',
+  quoteId: '55',
+  status: UNIVERSITY_STATUS.ACTIVE_ORDER,
+  stats: {
+    checked: 0,
+    totalComponents: 50,
+    approved: 0,
+    required: 0,
+    rejected: 0,
+    totalKits: 30,
+  },
+  pricing: {
+    finalUnitPrice: 9000,
+    pricePerKit: 100,
+    initialEstimatePrice: 9100,
+    currency: 'DKK',
+  },
+  progressStep: 2,
+}
 
 export const universities = [
   {
@@ -39,25 +61,17 @@ export const universities = [
     addressLine2: '',
     ean: '168764865',
     loginCode: 'BUS-A1B2',
-    kit: {
-      name: '2026 Semester kit',
-      quoteId: '55',
-      stats: {
-        checked: 0,
-        totalComponents: 50,
-        approved: 0,
-        required: 0,
-        rejected: 0,
-        totalKits: 30,
+    kit: semesterKit,
+    activeOrders: [
+      semesterKit,
+      {
+        ...semesterKit,
+        id: 'order-1-2026-1z',
+        name: '2026 Semester kit Class 1Z',
+        quoteId: '56',
+        progressStep: 3,
       },
-      pricing: {
-        finalUnitPrice: 9000,
-        pricePerKit: 100,
-        initialEstimatePrice: 9100,
-        currency: 'DKK',
-      },
-      progressStep: 2,
-    },
+    ],
     status: UNIVERSITY_STATUS.ACTIVE_ORDER,
     previousOrders: defaultPreviousOrders,
   },
@@ -72,8 +86,10 @@ export const universities = [
     ean: '168764865',
     loginCode: 'ACA-C3D4',
     kit: {
+      id: 'order-2-2026',
       name: '2026 Semester kit',
       quoteId: '42',
+      status: UNIVERSITY_STATUS.ACTIVE_ORDER,
       stats: {
         checked: 0,
         totalComponents: 50,
@@ -90,6 +106,7 @@ export const universities = [
       },
       progressStep: 2,
     },
+    activeOrders: [],
     status: UNIVERSITY_STATUS.ACTIVE_ORDER,
     previousOrders: defaultPreviousOrders,
   },
@@ -104,8 +121,10 @@ export const universities = [
     ean: '5700000000003',
     loginCode: 'NOR-E5F6',
     kit: {
+      id: 'order-3-2025',
       name: 'Fall 2025 kit',
       quoteId: '31',
+      status: UNIVERSITY_STATUS.INACTIVE_ORDERS,
       stats: {
         checked: 10,
         totalComponents: 50,
@@ -122,9 +141,10 @@ export const universities = [
       },
       progressStep: 1,
     },
+    activeOrders: [],
     status: UNIVERSITY_STATUS.INACTIVE_ORDERS,
     previousOrders: [
-      { id: 'prev-3a', name: '2024 Semester kit', status: UNIVERSITY_STATUS.INACTIVE_ORDERS },
+      { id: 'prev-3a', name: '2024 Semester kit', status: UNIVERSITY_STATUS.INACTIVE_ORDERS, stats: { totalKits: 15 } },
     ],
   },
   {
@@ -138,8 +158,10 @@ export const universities = [
     ean: '5700000000004',
     loginCode: 'COA-G7H8',
     kit: {
+      id: 'order-4-2026',
       name: '2026 Semester kit',
       quoteId: '67',
+      status: UNIVERSITY_STATUS.REQUIRES_CHANGES,
       stats: {
         checked: 35,
         totalComponents: 50,
@@ -156,6 +178,7 @@ export const universities = [
       },
       progressStep: 3,
     },
+    activeOrders: [],
     status: UNIVERSITY_STATUS.REQUIRES_CHANGES,
     previousOrders: defaultPreviousOrders,
   },
@@ -170,8 +193,10 @@ export const universities = [
     ean: '5700000000005',
     loginCode: 'MET-I9J0',
     kit: {
+      id: 'order-5-2026',
       name: 'Spring 2026 kit',
       quoteId: '18',
+      status: UNIVERSITY_STATUS.ACTIVE_ORDER,
       stats: {
         checked: 50,
         totalComponents: 50,
@@ -188,6 +213,7 @@ export const universities = [
       },
       progressStep: 5,
     },
+    activeOrders: [],
     status: UNIVERSITY_STATUS.ACTIVE_ORDER,
     previousOrders: defaultPreviousOrders,
   },

@@ -32,24 +32,20 @@ export default function PreviousOrderPage() {
           <CustomerOrderCard
             order={{
               ...order,
-              stats: { totalKits: university.kit.stats.totalKits },
+              stats: order.stats ?? { totalKits: university.kit.stats.totalKits },
             }}
             status={UNIVERSITY_STATUS.INACTIVE_ORDERS}
             showInactiveSummary
             onExportCsv={() => window.alert('Export CSV (demo)')}
           />
           <div className="flex flex-col gap-6">
-            <KitPrice pricing={university.kit.pricing} />
+            <KitPrice pricing={order.pricing ?? university.kit.pricing} />
             <Link
               to={`/orders/${university.loginCode}/previous/${order.id}/reorder`}
               className="inline-flex w-fit rounded-xl bg-text px-10 py-3 font-body text-2xl font-medium text-accent-1 no-underline"
             >
               Reorder
             </Link>
-            <p className="m-0 flex max-w-[360px] gap-4 text-xl text-text">
-              <strong>!</strong>
-              <span>You can only reorder a kit if there are no active kit orders currently in progress.</span>
-            </p>
           </div>
         </div>
 

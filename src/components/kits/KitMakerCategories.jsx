@@ -1,24 +1,19 @@
 import { cn } from '../../lib/cn'
 
 const categories = [
-  'Microcontrollers',
-  'Resistors',
-  'Capacitors',
-  'Sensors',
-  'Connectors',
-  'Motors',
-  'LEDs',
-  'Transistors',
-  'Other',
+  { label: 'Microcontrollers', image: 'Microcontrollers.png' },
+  { label: 'Resistors', image: 'Resistor.png' },
+  { label: 'Capacitors', image: 'Capacitor.png' },
+  { label: 'Sensors', image: 'Sensors.png' },
+  { label: 'Connectors', image: 'Connectors.png' },
+  { label: 'Motors', image: 'Motors.png' },
+  { label: 'LEDs', image: 'LED.png' },
+  { label: 'Transistors', image: 'Transistor.png' },
+  { label: 'Other', image: 'Other.png' },
 ]
 
-function CategoryIcon() {
-  return (
-    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <rect x="7" y="7" width="10" height="10" rx="2" stroke="currentColor" strokeWidth="2" />
-      <path d="M4 10h3M4 14h3M17 10h3M17 14h3M10 4v3M14 4v3M10 17v3M14 17v3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-    </svg>
-  )
+function publicAsset(path) {
+  return `${import.meta.env.BASE_URL}${path}`
 }
 
 export default function KitMakerCategories({ active, onChange }) {
@@ -28,18 +23,23 @@ export default function KitMakerCategories({ active, onChange }) {
       <div className="grid gap-5 rounded-[20px] bg-background-secondary p-6 md:grid-cols-2 xl:grid-cols-3">
         {categories.map((category) => (
           <button
-            key={category}
+            key={category.label}
             type="button"
-            onClick={() => onChange(category)}
+            onClick={() => onChange(category.label)}
             className={cn(
-              'flex cursor-pointer items-center gap-3 rounded-xl border px-6 py-4 text-left font-body text-base font-medium text-text shadow-md transition-opacity hover:opacity-90',
-              active === category
+              'flex min-h-[74px] cursor-pointer items-center gap-4 rounded-xl border px-8 py-4 text-left font-body text-xl font-normal text-text shadow-md transition-opacity hover:opacity-90',
+              active === category.label
                 ? 'border-accent-2 bg-background-secondary'
                 : 'border-transparent bg-background shadow-background-third',
             )}
           >
-            <CategoryIcon />
-            {category}
+            <img
+              src={publicAsset(`Categories/${category.image}`)}
+              alt=""
+              className="size-9 object-contain"
+              aria-hidden="true"
+            />
+            {category.label}
           </button>
         ))}
       </div>

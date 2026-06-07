@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { useParams } from 'react-router'
+import { useNavigate, useParams } from 'react-router'
 import FilterPill from '../components/admin/FilterPill'
 import TeacherAccountMenu from '../components/customer/TeacherAccountMenu'
 import KitBuilderRequestForm from '../components/kits/KitBuilderRequestForm'
@@ -12,6 +12,7 @@ import SortSelect from '../components/ui/SortSelect'
 import { kitMakerProducts } from '../data/kitMakerProducts'
 import { useDebouncedValue } from '../hooks/useDebouncedValue'
 import { useUniversityByLoginCode } from '../hooks/useUniversityByLoginCode'
+import { useUniversities } from '../hooks/useUniversities'
 
 const SORT_OPTIONS = [
   { id: 'name', label: 'Name' },
@@ -27,6 +28,7 @@ const PRICE_FILTERS = [
 
 export default function MakeYourOwnKitPage() {
   const { loginCode } = useParams()
+  const navigate = useNavigate()
   const [activeCategory, setActiveCategory] = useState('Microcontrollers')
   const [query, setQuery] = useState('')
   const debouncedQuery = useDebouncedValue(query)
@@ -38,6 +40,7 @@ export default function MakeYourOwnKitPage() {
   const [pendingOrder, setPendingOrder] = useState(null)
 
   const university = useUniversityByLoginCode(loginCode)
+  const { createActiveOrder } = useUniversities()
 
   const filteredProducts = useMemo(() => {
     const normalizedQuery = debouncedQuery.trim().toLowerCase()
@@ -245,9 +248,10 @@ export default function MakeYourOwnKitPage() {
           order={pendingOrder}
           onCancel={() => setPendingOrder(null)}
           onConfirm={() => {
+            createActiveOrder(university.id, pendingOrder)
             setPendingOrder(null)
             setCartItems([])
-            window.alert('Order submitted (demo)')
+            navigate(`/orders/${university.loginCode}`)
           }}
         />
       ) : null}

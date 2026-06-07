@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { useParams } from 'react-router'
+import { useNavigate, useParams } from 'react-router'
 import FilterPill from '../components/admin/FilterPill'
 import TeacherAccountMenu from '../components/customer/TeacherAccountMenu'
 import AddToKitCart from '../components/kits/AddToKitCart'
@@ -11,6 +11,8 @@ import SortSelect from '../components/ui/SortSelect'
 import { kitMakerProducts } from '../data/kitMakerProducts'
 import { useDebouncedValue } from '../hooks/useDebouncedValue'
 import { useUniversityByLoginCode } from '../hooks/useUniversityByLoginCode'
+import { useUniversities } from '../hooks/useUniversities'
+import { findUniversityOrder } from '../lib/universityUtils'
 
 const SORT_OPTIONS = [
   { id: 'name', label: 'Name' },
@@ -26,6 +28,7 @@ const PRICE_FILTERS = [
 
 export default function AddComponentsPage() {
   const { loginCode, orderId } = useParams()
+  const navigate = useNavigate()
   const [activeCategory, setActiveCategory] = useState('Microcontrollers')
   const [query, setQuery] = useState('')
   const debouncedQuery = useDebouncedValue(query)
@@ -35,14 +38,15 @@ export default function AddComponentsPage() {
   const [pendingOrder, setPendingOrder] = useState(null)
 
   const university = useUniversityByLoginCode(loginCode)
-  const order = university?.previousOrders?.find((item) => item.id === orderId)
+  const { createActiveOrder } = useUniversities()
+  const order = findUniversityOrder(university, orderId)
   const baseItem = useMemo(
     () =>
       order && university
         ? {
             id: `base-${order.id}`,
             name: `${order.name} base kit`,
-            price: university.kit.pricing.pricePerKit,
+            price: order.pricing?.pricePerKit ?? university.kit.pricing.pricePerKit,
             quantity: 1,
             locked: true,
           }
@@ -203,8 +207,9 @@ export default function AddComponentsPage() {
           order={pendingOrder}
           onCancel={() => setPendingOrder(null)}
           onConfirm={() => {
+            createActiveOrder(university.id, pendingOrder)
             setPendingOrder(null)
-            window.alert('Kit updated (demo)')
+            navigate(`/orders/${university.loginCode}`)
           }}
         />
       ) : null}

@@ -7,12 +7,14 @@ import Button from '../components/ui/Button'
 import { UNIVERSITY_STATUS } from '../data/universities'
 import { useUniversityByLoginCode } from '../hooks/useUniversityByLoginCode'
 import { cn } from '../lib/cn'
+import { getActiveOrders } from '../lib/universityUtils'
 
 export default function CustomerOrdersPage() {
   const { loginCode } = useParams()
   const navigate = useNavigate()
   const [showPrototypeModal, setShowPrototypeModal] = useState(false)
   const university = useUniversityByLoginCode(loginCode)
+  const activeOrders = getActiveOrders(university)
 
   if (!university) {
     return (
@@ -33,11 +35,6 @@ export default function CustomerOrdersPage() {
             <h1 className="m-0 font-headline text-4xl uppercase leading-tight">
               Your Orders
             </h1>
-            <p className="m-0 mt-6 max-w-[860px] text-2xl leading-tight max-sm:text-xl">
-              You currently have one active order. Please note that if you wish
-              to reorder a previous kit, you must finalize the current order
-              first.
-            </p>
             <Button
               type="button"
               onClick={() => setShowPrototypeModal(true)}
@@ -57,19 +54,24 @@ export default function CustomerOrdersPage() {
         </header>
 
         <div className={cn('mt-24 flex flex-col gap-8', 'max-sm:mt-12')}>
-          <CustomerOrderCard
-            order={university.kit}
-            status={UNIVERSITY_STATUS.ACTIVE_ORDER}
-            isActive
-            onExportCsv={() => window.alert('Export CSV (demo)')}
-            dashboardHref={`/orders/${university.loginCode}/dashboard`}
-          />
+          {activeOrders.map((order) => (
+            <CustomerOrderCard
+              key={order.id}
+              order={order}
+              status={order.status ?? UNIVERSITY_STATUS.ACTIVE_ORDER}
+              isActive
+              variant="compact"
+              onExportCsv={() => window.alert('Export CSV (demo)')}
+              dashboardHref={`/orders/${university.loginCode}/dashboard/${order.id}`}
+            />
+          ))}
 
           {(university.previousOrders ?? []).map((order) => (
             <CustomerOrderCard
               key={order.id}
               order={order}
               status={order.status}
+              variant="compact"
               onExportCsv={() => window.alert('Export previous order CSV (demo)')}
               detailHref={`/orders/${university.loginCode}/previous/${order.id}`}
             />

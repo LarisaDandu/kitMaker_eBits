@@ -25,6 +25,7 @@ export const products = [
   {
     id: 'prod-1-1',
     universityId: 'uni-1',
+    orderId: 'order-1-2026',
     name: 'ESP32 Udviklingsboard',
     subtitle: 'CH940C',
     status: PRODUCT_STATUS.PENDING_REVIEW,
@@ -39,6 +40,7 @@ export const products = [
   {
     id: 'prod-1-2',
     universityId: 'uni-1',
+    orderId: 'order-1-2026',
     name: 'ESP32 Udviklingsboard',
     subtitle: 'CH940C',
     status: PRODUCT_STATUS.APPROVED,
@@ -57,6 +59,7 @@ export const products = [
   {
     id: 'prod-1-3',
     universityId: 'uni-1',
+    orderId: 'order-1-2026-1z',
     name: 'ESP32 Udviklingsboard',
     subtitle: 'CH940C',
     status: PRODUCT_STATUS.CHANGES,
@@ -75,6 +78,7 @@ export const products = [
   {
     id: 'prod-2-1',
     universityId: 'uni-2',
+    orderId: 'order-2-2026',
     name: 'ESP32 Udviklingsboard',
     subtitle: 'CH940C',
     status: PRODUCT_STATUS.PENDING_REVIEW,
@@ -89,6 +93,7 @@ export const products = [
   {
     id: 'prod-2-2',
     universityId: 'uni-2',
+    orderId: 'order-2-2026',
     name: 'ESP32 Udviklingsboard',
     subtitle: 'CH940C',
     status: PRODUCT_STATUS.APPROVED,
@@ -103,6 +108,7 @@ export const products = [
   {
     id: 'prod-2-3',
     universityId: 'uni-2',
+    orderId: 'order-2-2026',
     name: 'ESP32 Udviklingsboard',
     subtitle: 'CH940C',
     status: PRODUCT_STATUS.REJECTED,
@@ -121,6 +127,7 @@ export const products = [
   {
     id: 'prod-3-1',
     universityId: 'uni-3',
+    orderId: 'order-3-2025',
     name: 'ESP32 Udviklingsboard',
     subtitle: 'CH940C',
     status: PRODUCT_STATUS.PENDING_REVIEW,
@@ -135,6 +142,7 @@ export const products = [
   {
     id: 'prod-4-1',
     universityId: 'uni-4',
+    orderId: 'order-4-2026',
     name: 'ESP32 Udviklingsboard',
     subtitle: 'CH940C',
     status: PRODUCT_STATUS.APPROVED,
@@ -149,6 +157,7 @@ export const products = [
   {
     id: 'prod-4-2',
     universityId: 'uni-4',
+    orderId: 'order-4-2026',
     name: 'ESP32 Udviklingsboard',
     subtitle: 'CH940C',
     status: PRODUCT_STATUS.CHANGES,
@@ -163,6 +172,7 @@ export const products = [
   {
     id: 'prod-5-1',
     universityId: 'uni-5',
+    orderId: 'order-5-2026',
     name: 'ESP32 Udviklingsboard',
     subtitle: 'CH940C',
     status: PRODUCT_STATUS.APPROVED,
@@ -178,4 +188,8 @@ export const products = [
 
 export function getProductsByUniversity(universityId) {
   return products.filter((product) => product.universityId === universityId)
+}
+
+export function getProductsByOrder(orderId) {
+  return products.filter((product) => product.orderId === orderId)
 }

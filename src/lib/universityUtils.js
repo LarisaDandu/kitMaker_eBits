@@ -20,10 +20,16 @@ export function generateLoginCode() {
   return `${segment()}-${segment()}`
 }
 
+export function generateOrderId() {
+  return `order-${crypto.randomUUID().slice(0, 8)}`
+}
+
 export function createDefaultKit() {
   return {
+    id: generateOrderId(),
     name: 'New kit',
     quoteId: String(Math.floor(Math.random() * 80) + 10),
+    status: UNIVERSITY_STATUS.ACTIVE_ORDER,
     stats: {
       checked: 0,
       totalComponents: 50,
@@ -39,6 +45,82 @@ export function createDefaultKit() {
       currency: 'DKK',
     },
     progressStep: 0,
+  }
+}
+
+export function getActiveOrders(university) {
+  if (!university) return []
+  const activeOrders = university.activeOrders?.length
+    ? university.activeOrders
+    : university.kit
+      ? [university.kit]
+      : []
+
+  return activeOrders.map((order) =>
+    order.status
+      ? order
+      : {
+          ...order,
+          status: university.status ?? UNIVERSITY_STATUS.ACTIVE_ORDER,
+        },
+  )
+}
+
+export function getPrimaryActiveOrder(university) {
+  return getActiveOrders(university)[0] ?? null
+}
+
+export function findUniversityOrder(university, orderId) {
+  if (!university) return null
+  const orders = [
+    ...getActiveOrders(university),
+    ...(university.previousOrders ?? []),
+  ]
+
+  return orders.find((order) => order.id === orderId) ?? null
+}
+
+export function createOrderFromRequest(orderInput = {}) {
+  const items = orderInput.items ?? []
+  const kitCount = Number(orderInput.kitCount ?? 1)
+  const totalComponents = items.length || 1
+
+  return {
+    id: generateOrderId(),
+    name: orderInput.kitName?.trim() || 'New kit',
+    quoteId: String(Math.floor(Math.random() * 80) + 10),
+    status: UNIVERSITY_STATUS.ACTIVE_ORDER,
+    stats: {
+      checked: 0,
+      totalComponents,
+      approved: 0,
+      required: 0,
+      rejected: 0,
+      totalKits: kitCount,
+    },
+    pricing: {
+      finalUnitPrice: 0,
+      pricePerKit: items[0]?.price ?? 0,
+      initialEstimatePrice: 0,
+      currency: 'DKK',
+    },
+    progressStep: 0,
+    products: items.map((item, index) => ({
+      id: `${item.id}-${Date.now()}-${index}`,
+      orderId: null,
+      name: item.name,
+      subtitle: item.subtitle ?? '',
+      status: 'pending_review',
+      pcsPerKit: item.quantity,
+      quoteRow: index + 1,
+      orderQuantity: kitCount,
+      variant: item.variant ?? '',
+      pack: item.pack ?? `${item.quantity}pcs`,
+      quoteLine: item.quoteLine ?? `${item.price ?? 0} kr`,
+      supplierLink: item.supplierLink ?? item.link,
+      sku: item.sku,
+    })),
+    notes: orderInput.notes ?? '',
   }
 }
 
@@ -58,11 +140,13 @@ export function universityToFormValues(university) {
 }
 
 export function formValuesToUniversity(form, existing) {
-  const base = existing ?? {
+  const base = {
     id: generateUniversityId(),
     status: UNIVERSITY_STATUS.REQUIRES_CHANGES,
     kit: createDefaultKit(),
+    activeOrders: [],
     previousOrders: [],
+    ...existing,
   }
 
   return {

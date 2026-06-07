@@ -48,10 +48,18 @@ function StatusPill({ status }) {
   )
 }
 
+function getOrderStageLabel(order, status) {
+  if (status === UNIVERSITY_STATUS.INACTIVE_ORDERS) return null
+  const step = order.progressStep ?? 0
+  if (step >= 3) return 'Kit assembly'
+  return 'Components found'
+}
+
 export default function CustomerOrderCard({
   order,
   status,
   isActive = false,
+  variant = 'dashboard',
   onExportCsv,
   dashboardHref,
   detailHref,
@@ -59,11 +67,83 @@ export default function CustomerOrderCard({
 }) {
   const stats = order.stats
   const rejected = stats?.rejected ?? stats?.required ?? 0
+  const isCompact = variant === 'compact'
+
+  if (isCompact) {
+    const stageLabel = getOrderStageLabel(order, status)
+
+    return (
+      <article
+        className={cn(
+          'box-border w-full rounded-[20px] bg-background-secondary px-8 py-7',
+          'max-sm:px-5 max-sm:py-6',
+        )}
+      >
+        <div className="flex flex-wrap items-center gap-4">
+          <StatusPill status={status} />
+          {stageLabel ? (
+            <span className="inline-flex w-fit items-center gap-2 rounded-full border border-text bg-background-third px-4 py-2 font-body text-base font-medium text-text">
+              {stageLabel}
+              <HelpTooltip label={`${stageLabel} help`}>
+                Current progress stage for this order.
+              </HelpTooltip>
+            </span>
+          ) : null}
+        </div>
+
+        <h2 className="m-0 mt-8 font-body text-4xl font-normal leading-tight text-text max-sm:text-3xl">
+          {order.name}
+        </h2>
+
+        <div className="mt-8 flex flex-wrap gap-7 max-sm:gap-3">
+          {onExportCsv ? (
+            <Button
+              type="button"
+              onClick={onExportCsv}
+              variant="outline"
+              size="md"
+              rounded="xl"
+              className="min-w-[215px]"
+            >
+              <ExportIcon />
+              Export CSV
+            </Button>
+          ) : null}
+          {dashboardHref ? (
+            <Link
+              to={dashboardHref}
+              className={buttonClassName({
+                variant: 'accent',
+                size: 'md',
+                rounded: 'xl',
+                className: 'min-w-[230px]',
+              })}
+            >
+              Open Dashboard
+            </Link>
+          ) : null}
+          {detailHref ? (
+            <Link
+              to={detailHref}
+              className={buttonClassName({
+                variant: 'accent',
+                size: 'md',
+                rounded: 'xl',
+                className: 'min-w-[135px]',
+              })}
+            >
+              View order
+            </Link>
+          ) : null}
+        </div>
+      </article>
+    )
+  }
 
   return (
     <article
       className={cn(
-        'box-border w-full max-w-[760px] rounded-[20px] bg-background-secondary px-8 py-7',
+        'box-border flex h-full w-full max-w-[760px] flex-col rounded-[20px] bg-background-secondary px-8 py-7',
         'max-sm:px-5 max-sm:py-6',
       )}
     >
@@ -138,31 +218,31 @@ export default function CustomerOrderCard({
             />
           </div>
 
-          <Button
-            type="button"
-            onClick={onExportCsv}
-            variant="outline"
-            size="md"
-            rounded="xl"
-            className="mt-8"
-          >
-            <ExportIcon />
-            Export CSV
-          </Button>
-
-          {dashboardHref ? (
-            <Link
-              to={dashboardHref}
-              className={buttonClassName({
-                variant: 'accent',
-                size: 'md',
-                rounded: 'xl',
-                className: 'ml-4 mt-8 align-top max-sm:ml-0',
-              })}
+          <div className="mt-auto flex flex-wrap gap-4 pt-10">
+            <Button
+              type="button"
+              onClick={onExportCsv}
+              variant="outline"
+              size="md"
+              rounded="xl"
             >
-              Open dashboard
-            </Link>
-          ) : null}
+              <ExportIcon />
+              Export CSV
+            </Button>
+
+            {dashboardHref ? (
+              <Link
+                to={dashboardHref}
+                className={buttonClassName({
+                  variant: 'accent',
+                  size: 'md',
+                  rounded: 'xl',
+                })}
+              >
+                Open dashboard
+              </Link>
+            ) : null}
+          </div>
         </>
       ) : (
         <>

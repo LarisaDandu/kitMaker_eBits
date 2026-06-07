@@ -9,9 +9,6 @@ export default function SearchFilterBar({
   onFilterChange,
   onCreateCustomer,
   isSearching,
-  sortValue,
-  sortOptions,
-  onSortChange,
 }) {
   return (
     <SearchFilterPanel
@@ -24,11 +21,15 @@ export default function SearchFilterBar({
       filterAriaLabel="Filter clients by status"
       ariaLabel="Search and filter clients"
       isSearching={isSearching}
-      sortValue={sortValue}
-      sortOptions={sortOptions}
-      onSortChange={onSortChange}
+      className="px-4 py-3"
       action={
-        <Button onClick={onCreateCustomer} className="max-sm:justify-center">
+        <Button
+          onClick={onCreateCustomer}
+          variant="accent"
+          size="md"
+          rounded="xl"
+          className="min-w-[260px] max-sm:justify-center"
+        >
           <PlusIcon />
           Create new customer
         </Button>

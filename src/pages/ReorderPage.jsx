@@ -7,7 +7,7 @@ import PreviousOrderProductList from '../components/kits/PreviousOrderProductLis
 import QuantityStepper from '../components/kits/QuantityStepper'
 import { kitMakerProducts } from '../data/kitMakerProducts'
 import { useUniversityByLoginCode } from '../hooks/useUniversityByLoginCode'
-import { formatKr } from '../lib/format'
+import { useUniversities } from '../hooks/useUniversities'
 
 export default function ReorderPage() {
   const { loginCode, orderId } = useParams()
@@ -18,6 +18,7 @@ export default function ReorderPage() {
   const [pendingOrder, setPendingOrder] = useState(null)
 
   const university = useUniversityByLoginCode(loginCode)
+  const { createActiveOrder } = useUniversities()
   const order = university?.previousOrders?.find((item) => item.id === orderId)
 
   if (!university || !order) {
@@ -28,11 +29,11 @@ export default function ReorderPage() {
     )
   }
 
-  const kitQuantity = quantity ?? university.kit.stats.totalKits
+  const kitQuantity = quantity ?? order.stats?.totalKits ?? university.kit.stats.totalKits
   const baseItem = {
     id: order.id,
     name: kitName || order.name,
-    price: university.kit.pricing.pricePerKit,
+    price: order.pricing?.pricePerKit ?? university.kit.pricing.pricePerKit,
     quantity: kitQuantity,
   }
 
@@ -81,7 +82,7 @@ export default function ReorderPage() {
           </section>
 
           <div className="flex flex-col gap-6">
-            <KitPrice pricing={university.kit.pricing} />
+            <KitPrice pricing={order.pricing ?? university.kit.pricing} />
             <section className="rounded-[20px] bg-background-secondary px-6 py-6">
               <p className="m-0 text-xl text-text">Let us know if there are any special requests or notes.</p>
               <textarea
@@ -113,8 +114,9 @@ export default function ReorderPage() {
           order={pendingOrder}
           onCancel={() => setPendingOrder(null)}
           onConfirm={() => {
+            createActiveOrder(university.id, pendingOrder)
             setPendingOrder(null)
-            window.alert(`Order submitted (${formatKr(baseItem.price * kitQuantity)})`)
+            navigate(`/orders/${university.loginCode}`)
           }}
         />
       ) : null}

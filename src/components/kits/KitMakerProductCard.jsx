@@ -12,21 +12,22 @@ function ExternalIcon() {
   )
 }
 
-function ProductImagePlaceholder() {
+function ProductImage() {
   return (
-    <div className="flex h-32 items-center justify-center bg-background-third">
-      <svg width="70" height="56" viewBox="0 0 64 52" fill="none" aria-hidden="true">
-        <rect x="9" y="12" width="46" height="28" rx="4" stroke="currentColor" strokeWidth="2" className="text-text" />
-        <rect x="16" y="18" width="12" height="8" rx="1" fill="currentColor" className="text-accent-1" />
-        <path d="M30 23h18M30 29h14" stroke="currentColor" strokeWidth="2" className="text-text" />
-      </svg>
+    <div className="flex h-[184px] items-center justify-center overflow-hidden border-x border-accent-2 bg-background-third">
+      <img
+        src={`${import.meta.env.BASE_URL}kitmaker_img.png`}
+        alt=""
+        className="h-full w-full object-cover"
+        aria-hidden="true"
+      />
     </div>
   )
 }
 
-function Details({ product }) {
+function Details({ product, className }) {
   return (
-    <div className="mt-6 rounded-[20px] bg-background px-8 py-7">
+    <div className={cn('mt-6 rounded-[20px] bg-background px-8 py-7', className)}>
       <h3 className="m-0 text-xl font-bold text-text">{product.fullName}</h3>
       <p className="m-0 mt-6 text-base text-text">Pris/pc: {product.price} kr-</p>
       <ul className="mt-6 flex flex-col gap-4 pl-6 text-base font-semibold text-text">
@@ -52,64 +53,59 @@ function Details({ product }) {
   )
 }
 
-function ProductDetailsModal({ product, onClose }) {
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-text/60 px-4 py-8">
-      <div className="relative max-h-[90vh] w-full max-w-[760px] overflow-auto rounded-[20px] bg-background-secondary px-6 py-6 shadow-xl">
-        <button
-          type="button"
-          onClick={onClose}
-          className="absolute top-4 right-4 flex size-9 cursor-pointer items-center justify-center rounded-full border-none bg-text font-body text-xl leading-none text-background"
-          aria-label="Close product details"
-        >
-          ×
-        </button>
-        <Details product={product} />
-      </div>
-    </div>
-  )
-}
-
 export default function KitMakerProductCard({ product, view, onAdd }) {
   const [quantity, setQuantity] = useState(1)
   const [expanded, setExpanded] = useState(false)
 
   if (view === 'grid') {
     return (
-      <article className="overflow-hidden rounded-xl border border-accent-2 bg-background-secondary shadow-sm">
-        <ProductImagePlaceholder />
-        <div className="px-4 py-4">
-          <h3 className="m-0 text-lg font-bold text-text">{product.name}</h3>
-          <p className="m-0 mt-1 text-sm text-text">{product.subtitle}</p>
-          <span className="mt-5 inline-flex rounded-full border border-text-secondary bg-background-third px-3 py-1.5 text-sm font-medium text-text">
-            pcs/kit: {quantity}
-          </span>
-          <div className="mt-4 grid grid-cols-2 gap-3">
-            <Button
-              type="button"
-              onClick={() => setExpanded((value) => !value)}
-              variant="accent"
-              size="sm"
-              rounded="xl"
-              className="min-w-0 px-3 text-sm"
-            >
-              More info
-            </Button>
-            <Button
-              type="button"
-              onClick={() => onAdd(product, quantity)}
-              variant="accent"
-              size="sm"
-              rounded="xl"
-              className="min-w-0 px-3 text-sm"
-            >
-              Add
-            </Button>
+      <article
+        className={cn(
+          'overflow-hidden rounded-[20px] border border-accent-2 bg-background-secondary shadow-md',
+          expanded && 'md:col-span-2 xl:col-span-3',
+        )}
+      >
+        <div
+          className={cn(
+            expanded && 'grid items-start gap-6 lg:grid-cols-[360px_1fr]',
+          )}
+        >
+          <div>
+            <ProductImage />
+            <div className="px-5 py-5">
+              <h3 className="m-0 text-2xl font-bold leading-tight text-text">{product.name}</h3>
+              <p className="m-0 mt-9 text-xl text-text">Pris/pc: {product.price} kr-</p>
+              <div className="mt-8 flex items-center gap-4">
+                <span className="text-xl text-text">pcs</span>
+                <QuantityStepper value={quantity} onChange={setQuantity} />
+              </div>
+              <div className="mt-9 grid grid-cols-2 items-center gap-4">
+                <Button
+                  type="button"
+                  onClick={() => onAdd(product, quantity)}
+                  variant="accent"
+                  size="lg"
+                  rounded="xl"
+                  fullWidth
+                  className="min-w-0 whitespace-nowrap px-4"
+                >
+                  Add to Cart
+                </Button>
+                <button
+                  type="button"
+                  onClick={() => setExpanded((value) => !value)}
+                  className="flex min-h-[52px] w-full cursor-pointer items-center justify-center whitespace-nowrap border-none bg-transparent p-0 font-body text-xl text-text"
+                  aria-expanded={expanded}
+                >
+                  {expanded ? 'see less' : 'see more'}
+                </button>
+              </div>
+            </div>
           </div>
           {expanded ? (
-            <ProductDetailsModal
+            <Details
               product={product}
-              onClose={() => setExpanded(false)}
+              className="m-5 lg:mt-5 lg:ml-0"
             />
           ) : null}
         </div>
@@ -131,7 +127,7 @@ export default function KitMakerProductCard({ product, view, onAdd }) {
               expanded && 'rotate-180',
             )}
           >
-            ⌄
+            ^
           </span>
           {product.name}
         </button>

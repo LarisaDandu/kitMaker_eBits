@@ -4,17 +4,30 @@ import {
   getMaxKitProgressStep,
   getStatsForProgressStep,
 } from '../lib/kitProgress'
-import { formValuesToUniversity, generateUniversityId } from '../lib/universityUtils'
+import {
+  createOrderFromRequest,
+  formValuesToUniversity,
+  generateUniversityId,
+  getActiveOrders,
+  getPrimaryActiveOrder,
+} from '../lib/universityUtils'
 import { UniversitiesContext } from './universitiesContextValue'
 
 function withMetadata(universities) {
   const initialTimestamp = new Date().toISOString()
 
-  return universities.map((university) => ({
-    ...university,
-    lastUpdatedAt: initialTimestamp,
-    deletedAt: null,
-  }))
+  return universities.map((university) => {
+    const activeOrders = getActiveOrders(university)
+    const primaryOrder = activeOrders[0] ?? university.kit
+
+    return {
+      ...university,
+      kit: primaryOrder,
+      activeOrders,
+      lastUpdatedAt: initialTimestamp,
+      deletedAt: null,
+    }
+  })
 }
 
 export function UniversitiesProvider({ children }) {
@@ -56,6 +69,35 @@ export function UniversitiesProvider({ children }) {
     )
   }, [])
 
+  const createActiveOrder = useCallback((universityId, orderInput) => {
+    const orderDraft = createOrderFromRequest(orderInput)
+    const order = {
+      ...orderDraft,
+      products: orderDraft.products.map((product) => ({
+        ...product,
+        orderId: orderDraft.id,
+        universityId,
+      })),
+    }
+
+    setAllUniversities((prev) =>
+      prev.map((uni) => {
+        if (uni.id !== universityId) return uni
+
+        const activeOrders = [...getActiveOrders(uni), order]
+        return {
+          ...uni,
+          status: UNIVERSITY_STATUS.ACTIVE_ORDER,
+          kit: activeOrders[0],
+          activeOrders,
+          lastUpdatedAt: new Date().toISOString(),
+        }
+      }),
+    )
+
+    return order.id
+  }, [])
+
   const removeUniversity = useCallback((id) => {
     setAllUniversities((prev) => prev.filter((uni) => uni.id !== id))
   }, [])
@@ -95,31 +137,38 @@ export function UniversitiesProvider({ children }) {
       prev.map((uni) => {
         if (uni.id !== id) return uni
 
+        const activeOrders = getActiveOrders(uni)
+        const primaryOrder = getPrimaryActiveOrder(uni)
         const maxStep = getMaxKitProgressStep()
-        const currentStep = uni.kit.progressStep ?? 0
+        const currentStep = primaryOrder.progressStep ?? 0
         if (currentStep >= maxStep) return uni
 
         const nextStep = currentStep + 1
-        const { stats } = uni.kit
-
-        return {
-          ...uni,
-          lastUpdatedAt: new Date().toISOString(),
+        const { stats } = primaryOrder
+        const updatedOrder = {
+          ...primaryOrder,
+          progressStep: nextStep,
           status:
             nextStep >= maxStep
               ? UNIVERSITY_STATUS.ACTIVE_ORDER
               : nextStep >= 2
                 ? UNIVERSITY_STATUS.REQUIRES_CHANGES
-                : uni.status,
-          kit: {
-            ...uni.kit,
-            progressStep: nextStep,
-            stats: getStatsForProgressStep(
-              nextStep,
-              stats.totalComponents,
-              stats.totalKits,
-            ),
-          },
+                : primaryOrder.status,
+          stats: getStatsForProgressStep(
+            nextStep,
+            stats.totalComponents,
+            stats.totalKits,
+          ),
+        }
+
+        return {
+          ...uni,
+          lastUpdatedAt: new Date().toISOString(),
+          status: updatedOrder.status,
+          kit: updatedOrder,
+          activeOrders: activeOrders.map((order) =>
+            order.id === updatedOrder.id ? updatedOrder : order,
+          ),
         }
       }),
     )
@@ -135,6 +184,7 @@ export function UniversitiesProvider({ children }) {
       softDeleteUniversity,
       restoreUniversity,
       advanceKitOrder,
+      createActiveOrder,
     }),
     [
       universities,
@@ -145,6 +195,7 @@ export function UniversitiesProvider({ children }) {
       softDeleteUniversity,
       restoreUniversity,
       advanceKitOrder,
+      createActiveOrder,
     ],
   )
 

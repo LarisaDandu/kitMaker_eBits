@@ -11,17 +11,10 @@ import { cn } from '../../lib/cn'
 import { formatLastUpdated } from '../../lib/time'
 import { FILTER_OPTIONS } from '../../data/universities'
 
-const SORT_OPTIONS = [
-  { id: 'updated', label: 'Latest update' },
-  { id: 'name', label: 'Name' },
-  { id: 'status', label: 'Status' },
-  { id: 'progress', label: 'Progress' },
-]
-
-function filterUniversities(list, searchQuery, statusFilter, sortValue) {
+function filterUniversities(list, searchQuery, statusFilter) {
   const query = searchQuery.trim().toLowerCase()
 
-  const filtered = list.filter((uni) => {
+  return list.filter((uni) => {
     const matchesStatus = statusFilter === 'all' || uni.status === statusFilter
     const matchesSearch =
       !query ||
@@ -35,15 +28,6 @@ function filterUniversities(list, searchQuery, statusFilter, sortValue) {
       uni.kit.quoteId.includes(query)
 
     return matchesStatus && matchesSearch
-  })
-
-  return [...filtered].sort((a, b) => {
-    if (sortValue === 'name') return a.name.localeCompare(b.name)
-    if (sortValue === 'status') return a.status.localeCompare(b.status)
-    if (sortValue === 'progress') {
-      return (b.kit.progressStep ?? 0) - (a.kit.progressStep ?? 0)
-    }
-    return new Date(b.lastUpdatedAt ?? 0) - new Date(a.lastUpdatedAt ?? 0)
   })
 }
 
@@ -59,7 +43,6 @@ export default function ClientsOverview() {
   const [searchQuery, setSearchQuery] = useState('')
   const debouncedSearchQuery = useDebouncedValue(searchQuery)
   const [activeFilter, setActiveFilter] = useState('all')
-  const [sortValue, setSortValue] = useState('updated')
   const [pendingDelete, setPendingDelete] = useState(null)
   const [undoToast, setUndoToast] = useState(
     () => location.state?.deletedUniversity ?? null,
@@ -72,9 +55,8 @@ export default function ClientsOverview() {
         universities,
         debouncedSearchQuery,
         activeFilter,
-        sortValue,
       ),
-    [universities, debouncedSearchQuery, activeFilter, sortValue],
+    [universities, debouncedSearchQuery, activeFilter],
   )
 
   const latestUpdatedAt = useMemo(
@@ -172,7 +154,7 @@ export default function ClientsOverview() {
     <div className={cn('min-h-svh bg-background-secondary font-body text-left text-text')}>
       <div
         className={cn(
-          'mx-auto box-border flex max-w-[1100px] flex-col gap-5 px-6 py-8 pb-12',
+          'mx-auto box-border flex max-w-[1400px] flex-col gap-5 px-6 py-8 pb-12',
           'max-sm:px-4 max-sm:py-5 max-sm:pb-8',
         )}
       >
@@ -189,9 +171,6 @@ export default function ClientsOverview() {
           activeFilter={activeFilter}
           onFilterChange={setActiveFilter}
           isSearching={searchQuery !== debouncedSearchQuery}
-          sortValue={sortValue}
-          sortOptions={SORT_OPTIONS}
-          onSortChange={setSortValue}
           onCreateCustomer={handleCreateCustomer}
         />
 
